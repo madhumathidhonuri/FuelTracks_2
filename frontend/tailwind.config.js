@@ -1,0 +1,142 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
+      },
+      colors: {
+        lb: {
+          50:  '#f0f8ff',
+          100: '#e0f0fe',
+          200: '#b8dde3',
+          300: '#8ec4cc',
+          400: '#5a9baa',
+          500: '#3d7a8a',
+          600: '#2a6070',
+          700: '#1b4a5e',
+          800: '#0f2d3d',
+          900: '#1a3a4a',
+        },
+        sky2: {
+          soft: '#d6eef2',
+          pale: '#e8f4f7',
+          mid:  '#8ec4cc',
+        },
+        mint:    '#34d8b5',
+        coral:   '#f87171',
+        amber2:  '#fbbf24',
+        slate2:  '#64748b',
+        accent:  '#3d7a8a',
+        'accent-dark': '#1b4a5e',
+      },
+      animation: {
+        'orb-float': 'orb-float 8s ease-in-out infinite',
+        'arc-spin': 'arc-spin linear infinite',
+        'streak-slide': 'streak-slide 6s ease-in-out infinite',
+        'float-card': 'float-card 4s ease-in-out infinite',
+        'pulse-dot': 'pulse-dot 2s infinite',
+        'shine': 'shine 7s ease-in-out infinite',
+        'veh-pulse': 'veh-pulse-anim 2s ease-out infinite',
+        'fade-in': 'fadeIn 0.5s ease-out',
+        'slide-up': 'slideUp 0.4s ease-out',
+        'slide-right': 'slideRight 0.3s ease-out',
+        'shake': 'shake 0.5s ease-in-out',
+        'count-up': 'countUp 1.5s ease-out',
+        'skeleton': 'skeleton 1.5s ease-in-out infinite',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'slide-out-right': 'slideOutRight 0.3s ease-out',
+      },
+      keyframes: {
+        'orb-float': {
+          '0%,100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(-28px) scale(1.04)' },
+        },
+        'arc-spin': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        'streak-slide': {
+          '0%,100%': { opacity: '0.35', transform: 'translateX(0) rotate(-20deg)' },
+          '50%': { opacity: '0.85', transform: 'translateX(18px) rotate(-20deg)' },
+        },
+        'float-card': {
+          '0%,100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-7px)' },
+        },
+        'pulse-dot': {
+          '0%,100%': { opacity: '1' },
+          '50%': { opacity: '0.45' },
+        },
+        'shine': {
+          '0%': { transform: 'translateX(-100%) rotate(30deg)' },
+          '100%': { transform: 'translateX(300%) rotate(30deg)' },
+        },
+        'veh-pulse-anim': {
+          '0%': { transform: 'scale(1)', opacity: '0.7' },
+          '100%': { transform: 'scale(2.8)', opacity: '0' },
+        },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slideUp': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slideRight': {
+          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'shake': {
+          '0%,100%': { transform: 'translateX(0)' },
+          '20%,60%': { transform: 'translateX(-8px)' },
+          '40%,80%': { transform: 'translateX(8px)' },
+        },
+        'skeleton': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'slideInRight': {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slideOutRight': {
+          '0%': { opacity: '1', transform: 'translateX(0)' },
+          '100%': { opacity: '0', transform: 'translateX(100%)' },
+        },
+      },
+      boxShadow: {
+        'glass': '0 20px 60px rgba(2,120,201,0.08)',
+        'glass-card': '0 12px 36px rgba(2,120,201,0.07)',
+        'kpi-card': '0 10px 32px rgba(2,120,201,0.09)',
+        'login-card': '0 32px 100px rgba(2,120,201,0.1)',
+        'btn-hover': '0 10px 32px rgba(2,120,201,0.2)',
+        'topbar': '0 2px 16px rgba(2,120,201,0.1)',
+        'sidebar': '4px 0 24px rgba(2,120,201,0.06)',
+        'input-focus': '0 0 0 3px rgba(56,175,249,0.12)',
+        'floating-card': '0 8px 24px rgba(2,120,201,0.1)',
+        'modal': '0 8px 24px rgba(2,120,201,0.12)',
+      },
+      borderRadius: {
+        'login': '28px',
+        'card': '20px',
+        'kpi': '20px',
+        'glass': '22px',
+        'btn': '14px',
+        'input': '12px',
+        'nav-item': '12px',
+        'alert': '14px',
+        'veh-opt': '12px',
+        'icon-box': '10px',
+        'badge': '6px',
+        'badge-md': '8px',
+        'topbar': '0',
+      },
+    },
+  },
+  plugins: [],
+};
