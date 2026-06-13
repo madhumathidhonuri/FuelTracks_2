@@ -73,6 +73,10 @@ app.use('/api/v1/analytics', require('./routes/analytics.routes'));
 app.use('/api/v1/statistics', require('./routes/statistics.routes'));
 app.use('/api/v1/sensors', require('./routes/sensor.routes'));
 app.use('/api/v1/alerts', require('./routes/alert.routes'));
+app.use('/api/v1/audit-logs', require('./routes/audit.routes'));
+app.use('/api/v1/archived-audit-logs', require('./routes/archivedAudit.routes'));
+app.use('/api/v1/rfid-tags', require('./routes/rfidTag.routes'));
+
 
 // Legacy TCP Server (port 9000) - for backward compatibility
 const LEGACY_PORT = parseInt(process.env.GPS_PORT) || 9000;

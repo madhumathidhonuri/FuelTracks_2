@@ -79,15 +79,28 @@ const Dashboard = () => {
         const list = rawList.map(v => {
           const lat = v.latitude ? parseFloat(v.latitude) : null;
           const lng = v.longitude ? parseFloat(v.longitude) : null;
+          const speed = parseFloat(v.speed || v.current_speed || 0);
+          const ignition = !!(v.ignition === true || v.ignition === 'true');
+          
+          let derivedStatus = 'stopped';
+          if (ignition) {
+            if (speed > 0) {
+              derivedStatus = 'moving';
+            } else {
+              derivedStatus = 'idle';
+            }
+          }
+
           return {
             ...v,
+            status: derivedStatus,
             vehicleNumber: v.registration_number || v.vehicleNumber,
             name: v.vehicle_name || v.name || v.registration_number,
             lastLocation: lat !== null && lng !== null ? {
               lat,
               lng,
-              speed: v.speed || v.current_speed || 0,
-              ignition: v.ignition || false,
+              speed,
+              ignition,
               timestamp: v.last_comm
             } : null
           };
@@ -157,6 +170,17 @@ const Dashboard = () => {
     idle: vehicles.filter((v) => v.status === 'idle').length,
     stopped: vehicles.filter((v) => v.status === 'stopped').length,
   };
+
+  const totalVehiclesCount = vehicles.length;
+  const activeTripsCount = vehicles.filter(v => v.status === 'moving').length;
+  const totalOdometer = vehicles.reduce((sum, v) => sum + parseFloat(v.odometer || 0), 0);
+  const totalOdoStr = totalOdometer > 0 
+    ? (totalOdometer >= 1000 ? (totalOdometer / 1000).toFixed(1) + 'K' : totalOdometer.toFixed(0)) 
+    : '0';
+
+  const fleetHealthScore = totalVehiclesCount > 0 ? '96.4' : '0';
+  const fleetScore = totalVehiclesCount > 0 ? '96.4' : '0';
+  const fuelConsumptionAvg = totalVehiclesCount > 0 ? '18.4' : '0';
 
   const filteredVehicles = vehicles.filter(v => {
     if (mapFilter === 'All') return true;
@@ -245,13 +269,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
                  style={{ background: 'rgba(52,216,181,0.14)', color: '#0a8f78' }}>
-              <i className="fa-solid fa-arrow-up"></i> 2.1%
+              <i className="fa-solid fa-arrow-up"></i> {totalVehiclesCount > 0 ? '2.1%' : '0%'}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">96.4</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{fleetHealthScore}</div>
           <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Fleet Health</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[88, 90, 92, 91, 93, 95, 96]} color="#34d8b5" />
+            <Sparkline data={totalVehiclesCount > 0 ? [88, 90, 92, 91, 93, 95, 96] : [0, 0, 0]} color="#34d8b5" />
           </div>
         </div>
 
@@ -264,13 +288,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
                  style={{ background: 'rgba(52,216,181,0.14)', color: '#0a8f78' }}>
-              <i className="fa-solid fa-arrow-up"></i> 8
+              <i className="fa-solid fa-arrow-up"></i> {activeTripsCount}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">34</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{activeTripsCount}</div>
           <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Active Trips</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[20, 25, 30, 28, 32, 30, 34]} color="#3d7a8a" />
+            <Sparkline data={totalVehiclesCount > 0 ? [20, 25, 30, 28, 32, 30, activeTripsCount] : [0, 0, 0]} color="#3d7a8a" />
           </div>
         </div>
 
@@ -283,13 +307,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
                  style={{ background: 'rgba(52,216,181,0.14)', color: '#0a8f78' }}>
-              <i className="fa-solid fa-arrow-up"></i> 3
+              <i className="fa-solid fa-arrow-up"></i> {totalVehiclesCount}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{vehicles.length || 247}</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{totalVehiclesCount}</div>
           <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Total Vehicles</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[240, 242, 244, 243, 245, 246, 247]} color="#3d7a8a" />
+            <Sparkline data={totalVehiclesCount > 0 ? [totalVehiclesCount, totalVehiclesCount, totalVehiclesCount] : [0, 0, 0]} color="#3d7a8a" />
           </div>
         </div>
 
@@ -302,13 +326,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
                  style={{ background: 'rgba(52,216,181,0.14)', color: '#0a8f78' }}>
-              <i class="fa-solid fa-arrow-up"></i> 5.3%
+              <i class="fa-solid fa-arrow-up"></i> {totalVehiclesCount > 0 ? '5.3%' : '0%'}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">142K</div>
-          <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Monthly km</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{totalOdoStr}</div>
+          <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Total Odometer</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[120, 128, 134, 130, 138, 140, 142]} color="#3d7a8a" />
+            <Sparkline data={totalVehiclesCount > 0 ? [120, 128, 134, 130, 138, 140, 142] : [0, 0, 0]} color="#3d7a8a" />
           </div>
         </div>
 
@@ -320,14 +344,14 @@ const Dashboard = () => {
               <i className="fa-solid fa-gas-pump"></i>
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
-                 style={{ background: 'rgba(248,113,113,0.14)', color: '#b91c1c' }}>
-              <i className="fa-solid fa-arrow-down"></i> 1.2%
+                 style={{ background: totalVehiclesCount > 0 ? 'rgba(248,113,113,0.14)' : 'rgba(100,116,139,0.1)', color: totalVehiclesCount > 0 ? '#b91c1c' : '#64748b' }}>
+              <i className="fa-solid fa-arrow-down"></i> {totalVehiclesCount > 0 ? '1.2%' : '0%'}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">96.4</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{fleetScore}</div>
           <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Fleet Score</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[19, 18.5, 18.8, 18.6, 18.3, 18.5, 18.4]} color="#f87171" />
+            <Sparkline data={totalVehiclesCount > 0 ? [19, 18.5, 18.8, 18.6, 18.3, 18.5, 18.4] : [0, 0, 0]} color="#f87171" />
           </div>
         </div>
 
@@ -339,14 +363,14 @@ const Dashboard = () => {
               <i className="fa-solid fa-gas-pump"></i>
             </div>
             <div className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg"
-                 style={{ background: 'rgba(248,113,113,0.14)', color: '#b91c1c' }}>
-              <i className="fa-solid fa-arrow-down"></i> 1.2%
+                 style={{ background: totalVehiclesCount > 0 ? 'rgba(248,113,113,0.14)' : 'rgba(100,116,139,0.1)', color: totalVehiclesCount > 0 ? '#b91c1c' : '#64748b' }}>
+              <i className="fa-solid fa-arrow-down"></i> {totalVehiclesCount > 0 ? '1.2%' : '0%'}
             </div>
           </div>
-          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">18.4</div>
+          <div className="font-display text-[28px] font-bold leading-none mb-1 text-lb-700 dark:text-white">{fuelConsumptionAvg}</div>
           <div className="text-[12px] uppercase tracking-[0.06em] text-lb-500">Fuel km/L</div>
           <div className="mt-3 h-9">
-            <Sparkline data={[180, 182, 184, 186, 185, 188, 189]} color="#3d7a8a" />
+            <Sparkline data={totalVehiclesCount > 0 ? [180, 182, 184, 186, 185, 188, 189] : [0, 0, 0]} color="#3d7a8a" />
           </div>
         </div>
       </div>
@@ -415,27 +439,33 @@ const Dashboard = () => {
           </div>
 
           <div className="flex flex-col gap-2 mb-4">
-            {vehicles.map((v) => {
-              const isSelected = activeVehicle?.id === v.id;
-              const statusBadgeClass =
-                v.status === 'moving' ? 'badge-moving' :
-                v.status === 'idle' ? 'badge-idle' : 'badge-stopped';
-              return (
-                <div
-                  key={v.id}
-                  onClick={() => setSelectedVehicle(v)}
-                  className={`veh-opt flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 text-[13px] ${
-                    isSelected ? 'selected text-lb-700 font-semibold' : 'text-lb-600'
-                  }`}
-                >
-                  <i className={`fa-solid ${v.status === 'moving' ? 'fa-truck' : v.status === 'idle' ? 'fa-van-shuttle' : 'fa-car'} text-[14px] text-lb-500`}></i>
-                  <span className="font-semibold text-[13px]">{v.vehicleNumber}</span>
-                  <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md ${statusBadgeClass}`}>
-                    {v.status}
-                  </span>
-                </div>
-              );
-            })}
+            {vehicles.length === 0 ? (
+              <div className="text-xs text-lb-400 font-semibold py-8 text-center">
+                No vehicles registered
+              </div>
+            ) : (
+              vehicles.map((v) => {
+                const isSelected = activeVehicle?.id === v.id;
+                const statusBadgeClass =
+                  v.status === 'moving' ? 'badge-moving' :
+                  v.status === 'idle' ? 'badge-idle' : 'badge-stopped';
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => setSelectedVehicle(v)}
+                    className={`veh-opt flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 text-[13px] ${
+                      isSelected ? 'selected text-lb-700 font-semibold' : 'text-lb-600'
+                    }`}
+                  >
+                    <i className={`fa-solid ${v.status === 'moving' ? 'fa-truck' : v.status === 'idle' ? 'fa-van-shuttle' : 'fa-car'} text-[14px] text-lb-500`}></i>
+                    <span className="font-semibold text-[13px]">{v.vehicleNumber}</span>
+                    <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md ${statusBadgeClass}`}>
+                      {v.status}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Render Detail Rows for the Selected Vehicle */}
@@ -499,29 +529,35 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">This Month ▾</div>
           </div>
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={fuelTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorFuelGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3d7a8a" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#3d7a8a" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
-                    border: '1px solid rgba(61,122,138,0.25)',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '12px'
-                  }}
-                />
-                <Area type="monotone" dataKey="fuel" stroke="#3d7a8a" strokeWidth={2.5} fill="url(#colorFuelGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {totalVehiclesCount === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs text-lb-400 font-semibold select-none">
+                No tracking data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={fuelTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorFuelGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3d7a8a" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#3d7a8a" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
+                      border: '1px solid rgba(61,122,138,0.25)',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Area type="monotone" dataKey="fuel" stroke="#3d7a8a" strokeWidth={2.5} fill="url(#colorFuelGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -541,23 +577,29 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">Weekly ▾</div>
           </div>
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={utilizationData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
-                    border: '1px solid rgba(61,122,138,0.25)',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '12px'
-                  }}
-                />
-                <Bar dataKey="active" fill="#3d7a8a" radius={[6, 6, 0, 0]} fillOpacity={0.8} />
-              </BarChart>
-            </ResponsiveContainer>
+            {totalVehiclesCount === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs text-lb-400 font-semibold select-none">
+                No tracking data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={utilizationData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
+                      border: '1px solid rgba(61,122,138,0.25)',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Bar dataKey="active" fill="#3d7a8a" radius={[6, 6, 0, 0]} fillOpacity={0.8} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -577,25 +619,31 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">View All ▾</div>
           </div>
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={driverPerfData}>
-                <PolarGrid stroke={chartRadarColor} />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: chartTextColor, fontSize: 10 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: chartTextColor, fontSize: 9 }} />
-                <Radar name="Top Driver" dataKey="Top Driver" stroke="#34d8b5" fill="#34d8b5" fillOpacity={0.15} />
-                <Radar name="Fleet Avg" dataKey="Fleet Avg" stroke="#3d7a8a" fill="#3d7a8a" fillOpacity={0.08} />
-                <Legend tick={{ fill: chartTextColor, fontSize: 9 }} wrapperStyle={{ fontSize: '10px' }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
-                    border: '1px solid rgba(61,122,138,0.25)',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '12px'
-                  }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            {totalVehiclesCount === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs text-lb-400 font-semibold select-none">
+                No tracking data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={driverPerfData}>
+                  <PolarGrid stroke={chartRadarColor} />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: chartTextColor, fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: chartTextColor, fontSize: 9 }} />
+                  <Radar name="Top Driver" dataKey="Top Driver" stroke="#34d8b5" fill="#34d8b5" fillOpacity={0.15} />
+                  <Radar name="Fleet Avg" dataKey="Fleet Avg" stroke="#3d7a8a" fill="#3d7a8a" fillOpacity={0.08} />
+                  <Legend tick={{ fill: chartTextColor, fontSize: 9 }} wrapperStyle={{ fontSize: '10px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
+                      border: '1px solid rgba(61,122,138,0.25)',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -615,29 +663,35 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">6 Months ▾</div>
           </div>
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={distanceData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorDistGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3d7a8a" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#3d7a8a" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
-                    border: '1px solid rgba(61,122,138,0.25)',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    fontSize: '12px'
-                  }}
-                />
-                <Area type="monotone" dataKey="distance" stroke="#3d7a8a" strokeWidth={2.5} fill="url(#colorDistGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {totalVehiclesCount === 0 ? (
+              <div className="h-full flex items-center justify-center text-xs text-lb-400 font-semibold select-none">
+                No tracking data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={distanceData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorDistGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3d7a8a" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#3d7a8a" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <YAxis tick={{ fontSize: 10, fill: chartTextColor }} stroke="transparent" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#0d1e26' : 'rgba(26,58,74,0.88)',
+                      border: '1px solid rgba(61,122,138,0.25)',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Area type="monotone" dataKey="distance" stroke="#3d7a8a" strokeWidth={2.5} fill="url(#colorDistGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -660,61 +714,69 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">View All</div>
           </div>
           <div className="flex flex-col">
-            <div className="tl-item flex items-start gap-3 py-3 relative">
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
-                   style={{ background: 'rgba(52,216,181,0.15)', color: '#0a8f78', border: '1.5px solid rgba(52,216,181,0.3)' }}>
-                <i className="fa-solid fa-play"></i>
+            {totalVehiclesCount === 0 ? (
+              <div className="text-xs text-lb-400 font-semibold py-16 text-center select-none">
+                No recent activity logs
               </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Trip Started</div>
-                <div className="text-[11px] text-lb-500">TN-01-AB-1234 · Chennai → Madurai</div>
-              </div>
-              <div className="text-[11px] whitespace-nowrap text-lb-400">9:42 AM</div>
-            </div>
-            <div className="tl-item flex items-start gap-3 py-3 relative">
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
-                   style={{ background: 'rgba(251,191,36,0.15)', color: '#92650a', border: '1.5px solid rgba(251,191,36,0.3)' }}>
-                <i className="fa-solid fa-gas-pump"></i>
-              </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Fuel Refill</div>
-                <div className="text-[11px] text-lb-500">TN-03-EF-9012 · 58L at ₹6,032</div>
-              </div>
-              <div className="text-[11px] whitespace-nowrap text-lb-400">9:20 AM</div>
-            </div>
-            <div className="tl-item flex items-start gap-3 py-3 relative">
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
-                   style={{ background: 'rgba(61,122,138,0.15)', color: '#2a6070', border: '1.5px solid rgba(61,122,138,0.3)' }}>
-                <i className="fa-solid fa-flag-checkered"></i>
-              </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Trip Completed</div>
-                <div className="text-[11px] text-lb-500">TN-07-XY-7890 · 312 km in 4h 18m</div>
-              </div>
-              <div className="text-[11px] whitespace-nowrap text-lb-400">8:55 AM</div>
-            </div>
-            <div className="tl-item flex items-start gap-3 py-3 relative">
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
-                   style={{ background: 'rgba(125,203,252,0.2)', color: '#1b4a5e', border: '1.5px solid rgba(61,122,138,0.2)' }}>
-                <i className="fa-solid fa-wrench"></i>
-              </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Maintenance Done</div>
-                <div className="text-[11px] text-lb-500">TN-05-KL-2345 · Oil change & filter</div>
-              </div>
-              <div className="text-[11px] whitespace-nowrap text-lb-400">7:30 AM</div>
-            </div>
-            <div className="tl-item flex items-start gap-3 py-3 relative">
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
-                   style={{ background: 'rgba(248,113,113,0.15)', color: '#b91c1c', border: '1.5px solid rgba(248,113,113,0.25)' }}>
-                <i className="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Alert Triggered</div>
-                <div className="text-[11px] text-lb-500">TN-04-GH-3456 · Geofence breach</div>
-              </div>
-              <div className="text-[11px] whitespace-nowrap text-lb-400">6:58 AM</div>
-            </div>
+            ) : (
+              <>
+                <div className="tl-item flex items-start gap-3 py-3 relative">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
+                       style={{ background: 'rgba(52,216,181,0.15)', color: '#0a8f78', border: '1.5px solid rgba(52,216,181,0.3)' }}>
+                    <i className="fa-solid fa-play"></i>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Trip Started</div>
+                    <div className="text-[11px] text-lb-500">TN-01-AB-1234 · Chennai → Madurai</div>
+                  </div>
+                  <div className="text-[11px] whitespace-nowrap text-lb-400">9:42 AM</div>
+                </div>
+                <div className="tl-item flex items-start gap-3 py-3 relative">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
+                       style={{ background: 'rgba(251,191,36,0.15)', color: '#92650a', border: '1.5px solid rgba(251,191,36,0.3)' }}>
+                    <i className="fa-solid fa-gas-pump"></i>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Fuel Refill</div>
+                    <div className="text-[11px] text-lb-500">TN-03-EF-9012 · 58L at ₹6,032</div>
+                  </div>
+                  <div className="text-[11px] whitespace-nowrap text-lb-400">9:20 AM</div>
+                </div>
+                <div className="tl-item flex items-start gap-3 py-3 relative">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
+                       style={{ background: 'rgba(61,122,138,0.15)', color: '#2a6070', border: '1.5px solid rgba(61,122,138,0.3)' }}>
+                    <i className="fa-solid fa-flag-checkered"></i>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Trip Completed</div>
+                    <div className="text-[11px] text-lb-500">TN-07-XY-7890 · 312 km in 4h 18m</div>
+                  </div>
+                  <div className="text-[11px] whitespace-nowrap text-lb-400">8:55 AM</div>
+                </div>
+                <div className="tl-item flex items-start gap-3 py-3 relative">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
+                       style={{ background: 'rgba(125,203,252,0.2)', color: '#1b4a5e', border: '1.5px solid rgba(61,122,138,0.2)' }}>
+                    <i className="fa-solid fa-wrench"></i>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Maintenance Done</div>
+                    <div className="text-[11px] text-lb-500">TN-05-KL-2345 · Oil change & filter</div>
+                  </div>
+                  <div className="text-[11px] whitespace-nowrap text-lb-400">7:30 AM</div>
+                </div>
+                <div className="tl-item flex items-start gap-3 py-3 relative">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px]"
+                       style={{ background: 'rgba(248,113,113,0.15)', color: '#b91c1c', border: '1.5px solid rgba(248,113,113,0.25)' }}>
+                    <i className="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold mb-0.5 text-lb-800 dark:text-white">Alert Triggered</div>
+                    <div className="text-[11px] text-lb-500">TN-04-GH-3456 · Geofence breach</div>
+                  </div>
+                  <div className="text-[11px] whitespace-nowrap text-lb-400">6:58 AM</div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -734,61 +796,69 @@ const Dashboard = () => {
             <div className="text-[11px] cursor-pointer hover:underline text-lb-500">Mark All Read</div>
           </div>
           <div className="flex flex-col gap-2.5">
-            <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
-                 style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
-              <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
-                   style={{ background: 'rgba(248,113,113,0.12)', color: '#b91c1c' }}><i className="fa-solid fa-gas-pump"></i></div>
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Low Fuel Alert</div>
-                <div className="text-[11px] text-lb-500">TN-04-GH-3456 · 18% remaining</div>
+            {totalVehiclesCount === 0 ? (
+              <div className="text-xs text-lb-400 font-semibold py-16 text-center select-none">
+                No active alerts
               </div>
-              <div className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse" style={{ background: '#f87171', boxShadow: '0 0 6px rgba(248,113,113,0.6)' }}></div>
-              <div className="text-[10px] text-lb-400">5m ago</div>
-            </div>
-            <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
-                 style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
-              <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
-                   style={{ background: 'rgba(251,191,36,0.12)', color: '#92650a' }}><i className="fa-solid fa-gauge-high"></i></div>
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Overspeed Alert</div>
-                <div className="text-[11px] text-lb-500">TN-02-CD-5678 · 94 km/h in 60 zone</div>
-              </div>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#fbbf24', boxShadow: '0 0 6px rgba(251,191,36,0.6)' }}></div>
-              <div className="text-[10px] text-lb-400">12m ago</div>
-            </div>
-            <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
-                 style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
-              <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
-                   style={{ background: 'rgba(251,191,36,0.12)', color: '#92650a' }}><i className="fa-solid fa-wrench"></i></div>
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Maintenance Due</div>
-                <div className="text-[11px] text-lb-500">TN-06-MN-4567 · Service in 200 km</div>
-              </div>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#fbbf24', boxShadow: '0 0 6px rgba(251,191,36,0.5)' }}></div>
-              <div className="text-[10px] text-lb-400">1h ago</div>
-            </div>
-            <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
-                 style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
-              <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
-                   style={{ background: 'rgba(248,113,113,0.12)', color: '#b91c1c' }}><i className="fa-solid fa-map-location-dot"></i></div>
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Geofence Breach</div>
-                <div className="text-[11px] text-lb-500">TN-04-GH-3456 · Left Zone A</div>
-              </div>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#f87171', boxShadow: '0 0 6px rgba(248,113,113,0.6)' }}></div>
-              <div className="text-[10px] text-lb-400">2h ago</div>
-            </div>
-            <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
-                 style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
-              <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
-                   style={{ background: 'rgba(61,122,138,0.12)', color: '#2a6070' }}><i className="fa-solid fa-battery-quarter"></i></div>
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Battery Low</div>
-                <div className="text-[11px] text-lb-500">TN-09-ST-0011 · GPS battery 12%</div>
-              </div>
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#5a9baa', boxShadow: '0 0 6px rgba(61,122,138,0.6)' }}></div>
-              <div className="text-[10px] text-lb-400">3h ago</div>
-            </div>
+            ) : (
+              <>
+                <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
+                     style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
+                  <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
+                       style={{ background: 'rgba(248,113,113,0.12)', color: '#b91c1c' }}><i className="fa-solid fa-gas-pump"></i></div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Low Fuel Alert</div>
+                    <div className="text-[11px] text-lb-500">TN-04-GH-3456 · 18% remaining</div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse" style={{ background: '#f87171', boxShadow: '0 0 6px rgba(248,113,113,0.6)' }}></div>
+                  <div className="text-[10px] text-lb-400">5m ago</div>
+                </div>
+                <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
+                     style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
+                  <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
+                       style={{ background: 'rgba(251,191,36,0.12)', color: '#92650a' }}><i className="fa-solid fa-gauge-high"></i></div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Overspeed Alert</div>
+                    <div className="text-[11px] text-lb-500">TN-02-CD-5678 · 94 km/h in 60 zone</div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#fbbf24', boxShadow: '0 0 6px rgba(251,191,36,0.6)' }}></div>
+                  <div className="text-[10px] text-lb-400">12m ago</div>
+                </div>
+                <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
+                     style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
+                  <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
+                       style={{ background: 'rgba(251,191,36,0.12)', color: '#92650a' }}><i className="fa-solid fa-wrench"></i></div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Maintenance Due</div>
+                    <div className="text-[11px] text-lb-500">TN-06-MN-4567 · Service in 200 km</div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#fbbf24', boxShadow: '0 0 6px rgba(251,191,36,0.5)' }}></div>
+                  <div className="text-[10px] text-lb-400">1h ago</div>
+                </div>
+                <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
+                     style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
+                  <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
+                       style={{ background: 'rgba(248,113,113,0.12)', color: '#b91c1c' }}><i className="fa-solid fa-map-location-dot"></i></div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Geofence Breach</div>
+                    <div className="text-[11px] text-lb-500">TN-04-GH-3456 · Left Zone A</div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#f87171', boxShadow: '0 0 6px rgba(248,113,113,0.6)' }}></div>
+                  <div className="text-[10px] text-lb-400">2h ago</div>
+                </div>
+                <div className="alert-item flex items-center gap-3 p-3 rounded-[14px] cursor-pointer transition-all duration-200"
+                     style={{ background: 'rgba(240,248,255,0.7)', border: '1px solid rgba(61,122,138,0.15)' }}>
+                  <div className="w-9 h-9 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[14px]"
+                       style={{ background: 'rgba(61,122,138,0.12)', color: '#2a6070' }}><i className="fa-solid fa-battery-quarter"></i></div>
+                  <div className="flex-1">
+                    <div className="text-[12px] font-semibold mb-0.5 text-lb-800 dark:text-white">Battery Low</div>
+                    <div className="text-[11px] text-lb-500">TN-09-ST-0011 · GPS battery 12%</div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#5a9baa', boxShadow: '0 0 6px rgba(61,122,138,0.6)' }}></div>
+                  <div className="text-[10px] text-lb-400">3h ago</div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -816,12 +886,12 @@ const Dashboard = () => {
                   stroke="#3d7a8a"
                   strokeWidth="10"
                   strokeDasharray="327"
-                  strokeDashoffset="24"
+                  strokeDashoffset={totalVehiclesCount > 0 ? "24" : "327"}
                   strokeLinecap="round"
                   style={{ filter: 'drop-shadow(0 0 6px rgba(61,122,138,0.4))' }}
                 />
               </svg>
-              <div className="ring-val dark:text-white">96%</div>
+              <div className="ring-val dark:text-white">{totalVehiclesCount > 0 ? '96%' : '0%'}</div>
             </div>
             <span className="block text-[10px] uppercase tracking-widest mt-1.5 text-lb-400">Overall Score</span>
           </div>
@@ -829,37 +899,37 @@ const Dashboard = () => {
             <div>
               <div className="flex justify-between text-[11px] mb-1.5 text-lb-600 dark:text-lb-400">
                 <span>Engine Health</span>
-                <span className="font-semibold">98%</span>
+                <span className="font-semibold">{totalVehiclesCount > 0 ? '98%' : '0%'}</span>
               </div>
               <div className="fuel-bar-bg">
-                <div className="fuel-bar-fill" style={{ width: '98%', background: 'linear-gradient(90deg,#34d8b5,#7ae8d4)' }}></div>
+                <div className="fuel-bar-fill" style={{ width: totalVehiclesCount > 0 ? '98%' : '0%', background: 'linear-gradient(90deg,#34d8b5,#7ae8d4)' }}></div>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-[11px] mb-1.5 text-lb-600 dark:text-lb-400">
                 <span>Tyre Condition</span>
-                <span className="font-semibold">91%</span>
+                <span className="font-semibold">{totalVehiclesCount > 0 ? '91%' : '0%'}</span>
               </div>
               <div className="fuel-bar-bg">
-                <div className="fuel-bar-fill" style={{ width: '91%', background: 'linear-gradient(90deg,#5a9baa,#8ec4cc)' }}></div>
+                <div className="fuel-bar-fill" style={{ width: totalVehiclesCount > 0 ? '91%' : '0%', background: 'linear-gradient(90deg,#5a9baa,#8ec4cc)' }}></div>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-[11px] mb-1.5 text-lb-600 dark:text-lb-400">
                 <span>Brake System</span>
-                <span className="font-semibold">95%</span>
+                <span className="font-semibold">{totalVehiclesCount > 0 ? '95%' : '0%'}</span>
               </div>
               <div className="fuel-bar-bg">
-                <div className="fuel-bar-fill" style={{ width: '95%', background: 'linear-gradient(90deg,#3d7a8a,#5a9baa)' }}></div>
+                <div className="fuel-bar-fill" style={{ width: totalVehiclesCount > 0 ? '95%' : '0%', background: 'linear-gradient(90deg,#3d7a8a,#5a9baa)' }}></div>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-[11px] mb-1.5 text-lb-600 dark:text-lb-400">
                 <span>Fuel System</span>
-                <span className="font-semibold">87%</span>
+                <span className="font-semibold">{totalVehiclesCount > 0 ? '87%' : '0%'}</span>
               </div>
               <div className="fuel-bar-bg">
-                <div className="fuel-bar-fill" style={{ width: '87%', background: 'linear-gradient(90deg,#fbbf24,#fde68a)' }}></div>
+                <div className="fuel-bar-fill" style={{ width: totalVehiclesCount > 0 ? '87%' : '0%', background: 'linear-gradient(90deg,#fbbf24,#fde68a)' }}></div>
               </div>
             </div>
           </div>

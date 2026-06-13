@@ -5,7 +5,7 @@ import { authApi } from '../../api/auth.api';
 import BackgroundCanvas from '../../components/common/BackgroundCanvas';
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@fueltracks.io');
+  const [email, setEmail] = useState('admin@fueltracks.com');
   const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +22,7 @@ const Login = () => {
       const { accessToken, refreshToken, user } = res.data?.data || res.data || {};
       if (accessToken) {
         login(accessToken, refreshToken, user);
-        navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+        navigate(user?.role === 'admin' || user?.role === 'superadmin' ? '/admin' : '/dashboard');
       } else {
         setError('Unexpected response from server.');
       }
@@ -152,7 +152,7 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="ft-input"
-                    placeholder="admin@fueltracks.io"
+                    placeholder="admin@fueltracks.com"
                   />
                 </div>
               </div>

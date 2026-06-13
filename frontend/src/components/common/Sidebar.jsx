@@ -1,8 +1,23 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AddTagsModal from './AddTagsModal';
+
 
 const Sidebar = ({ user }) => {
   const location = useLocation();
+  const [auditOpen, setAuditOpen] = useState(location.pathname.startsWith('/admin/audit'));
+  const [archivedAuditOpen, setArchivedAuditOpen] = useState(location.pathname.startsWith('/admin/archived-audit'));
+  const [vehiclesOpen, setVehiclesOpen] = useState(
+    location.pathname.startsWith('/admin/vehicles-search') ||
+    location.pathname.startsWith('/admin/vehicles-list') ||
+    location.pathname.startsWith('/admin/view-vehicles') ||
+    location.pathname.startsWith('/admin/vehicle-statuses') ||
+    location.pathname.startsWith('/admin/view-tags')
+  );
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+
+
 
   const userLinks = [
     { path: '/dashboard',  icon: 'fa-gauge-high',         label: 'Dashboard'     },
@@ -18,11 +33,11 @@ const Sidebar = ({ user }) => {
     { path: '/admin',                  icon: 'fa-screwdriver-wrench',   label: 'Overview'       },
     { path: '/admin/organizations',    icon: 'fa-sitemap',              label: 'Organizations'  },
     { path: '/admin/devices',          icon: 'fa-tablet-screen-button', label: 'Devices'        },
-    { path: '/admin/vehicles',         icon: 'fa-truck',                label: 'Vehicles'       },
     { path: '/admin/groups',           icon: 'fa-users-gear',           label: 'Groups'         },
     { path: '/admin/users',            icon: 'fa-users',                label: 'Users'          },
     { path: '/admin/settings',         icon: 'fa-gear',                 label: 'Settings'       },
   ];
+
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
@@ -106,10 +121,205 @@ const Sidebar = ({ user }) => {
         {isAdmin && (
           <>
             <div className="nav-section" style={{ marginTop: '12px' }}>Administration</div>
-            {adminLinks.map(renderLink)}
+            {adminLinks.slice(0, 5).map(renderLink)}
+
+            
+            {/* Collapsible Audit Link */}
+            <div>
+              <button
+                onClick={() => setAuditOpen(!auditOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/admin/audit')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/admin/audit') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-shield-halved" />
+                </div>
+                <span>Audit</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${auditOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {auditOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/admin/audit/dealer', label: 'Auditing' },
+                    { path: '/admin/audit/users', label: 'Users' },
+                    { path: '/admin/audit/vehicles', label: 'Vehicles' },
+                    { path: '/admin/audit/calibrate', label: 'Calibrate' },
+                    { path: '/admin/audit/renewals', label: 'Renewal Details' },
+                    { path: '/admin/audit/groups', label: 'Groups' },
+                    { path: '/admin/audit/organizations', label: 'Organizations' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.path}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Archived Audit Link */}
+            <div>
+              <button
+                onClick={() => setArchivedAuditOpen(!archivedAuditOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/admin/archived-audit')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/admin/archived-audit') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-box-archive" />
+                </div>
+                <span>Archived Audit</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${archivedAuditOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {archivedAuditOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/admin/archived-audit/auditing', label: 'Auditing' },
+                    { path: '/admin/archived-audit/users', label: 'Users' },
+                    { path: '/admin/archived-audit/vehicles', label: 'Vehicles' },
+                    { path: '/admin/archived-audit/manual_calibrate', label: 'Manual Calibrate' },
+                    { path: '/admin/archived-audit/auto_calibrate', label: 'Auto Calibrate' },
+                    { path: '/admin/archived-audit/groups', label: 'Groups' },
+                    { path: '/admin/archived-audit/organizations', label: 'Organizations' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.path}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
+            {/* Collapsible Vehicles Link */}
+            <div>
+              <button
+                onClick={() => setVehiclesOpen(!vehiclesOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/admin/vehicles-') ||
+                  location.pathname.startsWith('/admin/view-vehicles') ||
+                  location.pathname.startsWith('/admin/vehicle-statuses') ||
+                  location.pathname.startsWith('/admin/view-tags')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={
+                    location.pathname.startsWith('/admin/vehicles-') ||
+                    location.pathname.startsWith('/admin/view-vehicles') ||
+                    location.pathname.startsWith('/admin/vehicle-statuses') ||
+                    location.pathname.startsWith('/admin/view-tags')
+                      ? {
+                          background: 'rgba(61,122,138,0.18)',
+                          boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                        }
+                      : {}
+                  }
+                >
+                  <i className="fa-solid fa-truck" />
+                </div>
+                <span>Vehicles</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${vehiclesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {vehiclesOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/admin/vehicles-search', label: 'Vehicles Search' },
+                    { path: '/admin/vehicles-list', label: 'Vehicles List' },
+                    { path: '/admin/view-vehicles', label: 'View Vehicles' },
+                    { path: '/admin/vehicle-statuses', label: 'Vehicle Statuses' },
+                    { label: 'Add Tags', isModalTrigger: true },
+                    { path: '/admin/view-tags', label: 'View Tags' },
+                  ].map((sub, index) => {
+                    if (sub.isModalTrigger) {
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setIsTagModalOpen(true)}
+                          className="w-full text-left block px-3 py-1.5 rounded-lg text-[12px] font-medium text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800 transition-colors"
+                        >
+                          {sub.label}
+                        </button>
+                      );
+                    }
+                    return (
+                      <NavLink
+                        key={sub.path}
+                        to={sub.path}
+                        className={({ isActive }) =>
+                          `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                            isActive
+                              ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                              : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                          }`
+                        }
+                      >
+                        {sub.label}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {adminLinks.slice(5).map(renderLink)}
           </>
         )}
       </nav>
+
+      <AddTagsModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        onSuccess={() => {
+          // If on the tags list page, reload so the new tags appear
+          if (location.pathname === '/admin/view-tags') {
+            window.location.reload();
+          }
+        }}
+      />
+
 
       {/* ── Profile footer ── */}
       <div

@@ -11,21 +11,37 @@ const Organization = {
       'parking_duration', 'overspeed_limit', 'route_deviation_meters',
       'sms_provider', 'sms_username', 'sms_password', 'sms_sender_id',
       'sms_entity_name', 'whatsapp_enabled', 'telegram_enabled', 'rfid_enabled',
-      'daily_summary_enabled', 'is_active'
+      'daily_summary_enabled', 'is_active', 'settings',
+      'description', 'fleet_os_email', 'show_geofences', 'overspeed_duration',
+      'unauthorised_movement_alert', 'no_data_duration', 'sos_alert',
+      'power_cut_off_alarm_duration', 'harsh_breaking_alert', 'trip_planned_time',
+      'daily_diesel_summary', 'fuel_level_below', 'ongoing_fuel_alerts',
+      'fuel_notification_alert', 'fuel_alarm', 'geofence_fuel_alert',
+      'excess_consumption_filter', 'instant_fuel_alerts', 'verified_fuel_fill_theft_alert',
+      'sms_sender', 'sms_pattern', 'sms_escalation', 'school_geofence',
+      'geofence_immobilizer', 'send_geofence_sms', 'geofence'
     ];
     const values = [
       id, data.name, data.email, data.mobile, data.address, data.city, data.state,
       data.timezone || 'Asia/Kolkata', data.start_time, data.end_time,
       data.geofence_enabled ?? false, data.parking_alert ?? false,
       data.idle_alert ?? false, data.overspeed_alert ?? false,
-      data.towing_alert ?? false, data.tamper_alert ?? false,
+      data.towing_alert ?? true, data.tamper_alert ?? true,
       data.idle_duration ?? 10, data.parking_duration ?? 10,
       data.overspeed_limit ?? 80, data.route_deviation_meters ?? 500,
       data.sms_provider, data.sms_username, data.sms_password,
       data.sms_sender_id, data.sms_entity_name,
       data.whatsapp_enabled ?? false, data.telegram_enabled ?? false,
       data.rfid_enabled ?? false, data.daily_summary_enabled ?? false,
-      data.is_active ?? true
+      data.is_active ?? true, JSON.stringify(data.settings || {}),
+      data.description, data.fleet_os_email, data.show_geofences ?? false, data.overspeed_duration ?? 0,
+      data.unauthorised_movement_alert ?? false, data.no_data_duration, data.sos_alert ?? false,
+      data.power_cut_off_alarm_duration ?? 0, data.harsh_breaking_alert ?? false, data.trip_planned_time ?? false,
+      data.daily_diesel_summary ?? false, data.fuel_level_below ?? false, data.ongoing_fuel_alerts ?? false,
+      data.fuel_notification_alert || 'Always', data.fuel_alarm ?? false, data.geofence_fuel_alert || 'Both',
+      data.excess_consumption_filter ?? false, data.instant_fuel_alerts ?? false, data.verified_fuel_fill_theft_alert ?? true,
+      data.sms_sender, data.sms_pattern, data.sms_escalation ?? false, data.school_geofence ?? false,
+      data.geofence_immobilizer ?? false, data.send_geofence_sms, data.geofence
     ];
     const result = await query(
       `INSERT INTO organizations (${fields.join(',')}) VALUES (${fields.map((_, i) => `$${i + 1}`).join(',')}) RETURNING *`,
@@ -73,7 +89,15 @@ const Organization = {
       'parking_duration', 'overspeed_limit', 'route_deviation_meters',
       'sms_provider', 'sms_username', 'sms_password', 'sms_sender_id',
       'sms_entity_name', 'whatsapp_enabled', 'telegram_enabled', 'rfid_enabled',
-      'daily_summary_enabled', 'is_active'
+      'daily_summary_enabled', 'is_active', 'settings',
+      'description', 'fleet_os_email', 'show_geofences', 'overspeed_duration',
+      'unauthorised_movement_alert', 'no_data_duration', 'sos_alert',
+      'power_cut_off_alarm_duration', 'harsh_breaking_alert', 'trip_planned_time',
+      'daily_diesel_summary', 'fuel_level_below', 'ongoing_fuel_alerts',
+      'fuel_notification_alert', 'fuel_alarm', 'geofence_fuel_alert',
+      'excess_consumption_filter', 'instant_fuel_alerts', 'verified_fuel_fill_theft_alert',
+      'sms_sender', 'sms_pattern', 'sms_escalation', 'school_geofence',
+      'geofence_immobilizer', 'send_geofence_sms', 'geofence'
     ];
     const sets = [];
     const values = [];
@@ -81,7 +105,11 @@ const Organization = {
     for (const [key, value] of Object.entries(updates)) {
       if (allowed.includes(key)) {
         sets.push(`${key} = $${i}`);
-        values.push(value);
+        if (key === 'settings' && typeof value === 'object') {
+          values.push(JSON.stringify(value));
+        } else {
+          values.push(value);
+        }
         i++;
       }
     }

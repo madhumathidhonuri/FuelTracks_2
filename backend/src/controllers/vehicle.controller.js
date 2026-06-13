@@ -39,11 +39,15 @@ const getVehicleStatusAll = async (req, res) => {
 
 const createVehicle = async (req, res) => {
   try {
-    const vehicle = await Vehicle.create({ ...req.body, organization_id: req.user.organizationId });
+    const orgId = req.body.organization_id || req.user.organizationId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, message: 'Organization is not set. Please select or set an organization for this vehicle.' });
+    }
+    const vehicle = await Vehicle.create({ ...req.body, organization_id: orgId });
     return res.status(201).json({ success: true, message: 'Vehicle created', data: vehicle });
   } catch (err) {
     console.error('Create vehicle error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to create vehicle' });
+    return res.status(500).json({ success: false, message: 'Failed to create vehicle: ' + err.message });
   }
 };
 

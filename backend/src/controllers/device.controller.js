@@ -62,7 +62,7 @@ const onboardDevice = async (req, res) => {
         email: newUser.email,
         mobile: newUser.mobile,
         password_hash: passwordHash,
-        role: 'admin',
+        role: 'user',
         organization_id: null,
         company_name: newUser.company_name || newUser.username,
         user_mode: 'asset',
@@ -117,6 +117,13 @@ const onboardDevice = async (req, res) => {
         organization_id: organizationId,
         onboard_date: new Date(),
         licence_expire_date: expireDate,
+        gps_sim_no: dev.vehicle?.gpsSimNo || '',
+        odometer: dev.vehicle?.odoDistance ? parseFloat(dev.vehicle.odoDistance) : 0,
+        service_engineer: dev.vehicle?.serviceEngineer || '',
+        salesman: dev.vehicle?.salesman || '',
+        ticket_id: dev.vehicle?.ticketId || '',
+        sensor_no: dev.vehicle?.sensorNo || '',
+        status: 'active'
       });
 
       if (dev.vehicle?.groupId) {
@@ -143,6 +150,38 @@ const onboardDevice = async (req, res) => {
   }
 };
 
+const getAvailableLicences = async (req, res) => {
+  try {
+    const orgId = req.user.role === 'admin' || req.user.role === 'superadmin' 
+      ? (req.query.organizationId || req.user.organizationId) 
+      : req.user.organizationId;
+
+    if (!orgId) {
+      return res.json({ success: true, data: [], totalAvailable: 0 });
+    }
+
+    const licences = await Licence.findByOrganization(orgId);
+    let totalAvailable = 0;
+    const data = licences.map(l => {
+      const available = Math.max(0, parseInt(l.total_count || 0) - parseInt(l.used_count || 0));
+      totalAvailable += available;
+      return {
+        id: l.id,
+        tier: l.tier,
+        totalCount: parseInt(l.total_count || 0),
+        usedCount: parseInt(l.used_count || 0),
+        available: available,
+        expireDate: l.expire_date
+      };
+    });
+
+    return res.json({ success: true, data, totalAvailable });
+  } catch (err) {
+    console.error('Get available licences error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch available licences' });
+  }
+};
+
 const updateDevice = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
@@ -165,4 +204,4 @@ const deleteDevice = async (req, res) => {
   }
 };
 
-module.exports = { getDevices, getDeviceById, checkImei, onboardDevice, updateDevice, deleteDevice };
+module.exports = { getDevices, getDeviceById, checkImei, onboardDevice, updateDevice, deleteDevice, getAvailableLicences };

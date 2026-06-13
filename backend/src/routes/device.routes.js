@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/role.middleware');
 
 router.use(authenticate, requireAdmin);
 
+router.get('/licences/available', deviceController.getAvailableLicences);
 router.get('/', deviceController.getDevices);
 router.get('/:id', deviceController.getDeviceById);
 router.get('/check/:imei', deviceController.checkImei);

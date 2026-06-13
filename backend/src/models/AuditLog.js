@@ -5,12 +5,12 @@ const AuditLog = {
   async create(data) {
     const id = uuidv4();
     const result = await query(
-      `INSERT INTO audit_logs (id, user_id, user_name, user_ip, action, entity_type, entity_id, old_values, new_values, description, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())
+      `INSERT INTO audit_logs (id, user_id, user_name, user_ip, action, entity_type, entity_id, entity_name, old_values, new_values, description, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now())
        RETURNING *`,
       [id, data.user_id, data.user_name, data.user_ip, data.action, data.entity_type,
-       data.entity_id, data.old_values ? JSON.stringify(data.old_values) : null,
-       data.new_values ? JSON.stringify(data.new_values) : null, data.description]
+       data.entity_id, data.entity_name, data.old_values ? String(data.old_values) : null,
+       data.new_values ? String(data.new_values) : null, data.description]
     );
     return result.rows[0];
   },
@@ -29,7 +29,7 @@ const AuditLog = {
     }
     if (search) {
       paramCount++;
-      where += ` AND (a.user_name ILIKE $${paramCount} OR a.description ILIKE $${paramCount} OR a.action ILIKE $${paramCount})`;
+      where += ` AND (a.user_name ILIKE $${paramCount} OR a.description ILIKE $${paramCount} OR a.action ILIKE $${paramCount} OR a.entity_name ILIKE $${paramCount})`;
       params.push(`%${search}%`);
     }
     if (from) {
@@ -70,7 +70,7 @@ const AuditLog = {
     return { data: result.rows, total: parseInt(countResult.rows[0].count) };
   },
 
-  async logAction(user, action, entityType, entityId, newValues, description) {
+  async logAction(user, action, entityType, entityId, newValues, description, entityName) {
     return this.create({
       user_id: user.id,
       user_name: user.username,
@@ -78,6 +78,7 @@ const AuditLog = {
       action,
       entity_type: entityType,
       entity_id: entityId,
+      entity_name: entityName,
       new_values: newValues,
       description,
     });

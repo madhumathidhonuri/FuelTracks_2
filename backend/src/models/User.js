@@ -2,17 +2,17 @@ const { query } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
 const User = {
-  async create({ username, email, mobile, phone, password_hash, role, organization_id, first_name, last_name }) {
+  async create({ username, email, mobile, phone, password_hash, role, organization_id, first_name, last_name, alternate_email, zoho, enable_debugs, user_mode, selected_groups }) {
     const id = uuidv4();
     const finalPhone = phone || mobile || '';
     const finalFirstName = first_name || username || '';
     const finalLastName = last_name || '';
 
     const result = await query(
-      `INSERT INTO users (id, organization_id, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,now(),now())
+      `INSERT INTO users (id, organization_id, username, email, password_hash, first_name, last_name, phone, role, is_active, alternate_email, zoho, enable_debugs, user_mode, selected_groups, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14,now(),now())
        RETURNING *`,
-      [id, organization_id, email, password_hash, finalFirstName, finalLastName, finalPhone, role]
+      [id, organization_id, username, email, password_hash, finalFirstName, finalLastName, finalPhone, role, alternate_email, zoho, enable_debugs, user_mode, JSON.stringify(selected_groups || [])]
     );
     return result.rows[0];
   },
@@ -23,8 +23,7 @@ const User = {
   },
 
   async findByUsername(username) {
-    // Treat username as email for backward compatibility where username matches email
-    const result = await query('SELECT * FROM users WHERE email = $1', [username]);
+    const result = await query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
     return result.rows[0] || null;
   },
 
@@ -70,13 +69,19 @@ const User = {
 
   async update(id, updates) {
     const allowedMap = {
-      username: 'first_name',
+      username: 'username',
       mobile: 'phone',
       phone: 'phone',
       email: 'email',
       first_name: 'first_name',
       last_name: 'last_name',
       is_active: 'is_active',
+      alternate_email: 'alternate_email',
+      zoho: 'zoho',
+      enable_debugs: 'enable_debugs',
+      user_mode: 'user_mode',
+      selected_groups: 'selected_groups',
+      role: 'role',
     };
     const sets = [];
     const values = [];
@@ -85,7 +90,11 @@ const User = {
       const dbKey = allowedMap[key];
       if (dbKey && value !== undefined) {
         sets.push(`${dbKey} = $${i}`);
-        values.push(value);
+        if (key === 'selected_groups' && Array.isArray(value)) {
+          values.push(JSON.stringify(value));
+        } else {
+          values.push(value);
+        }
         i++;
       }
     }

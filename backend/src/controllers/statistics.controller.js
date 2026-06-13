@@ -2,6 +2,7 @@ const Location = require('../models/Location');
 const Trip = require('../models/Trip');
 const Vehicle = require('../models/Vehicle');
 const { calculateDistance } = require('../utils/geo.utils');
+const { query } = require('../config/db');
 
 const getDistance = async (req, res) => {
   try {
@@ -105,4 +106,92 @@ const getVehiclePerformance = async (req, res) => {
   }
 };
 
-module.exports = { getDistance, getDriverPerformance, getVehiclePerformance };
+const getAdminOverview = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Access denied: Admin only' });
+    }
+
+    const { rows: orgsRow } = await query('SELECT COUNT(*) FROM organizations');
+    const { rows: vehiclesRow } = await query('SELECT COUNT(*) FROM vehicles');
+    const { rows: usersRow } = await query('SELECT COUNT(*) FROM users');
+    const { rows: devicesRow } = await query("SELECT COUNT(*) FROM devices WHERE status = 'active'");
+
+    // Query 3 recent organizations with counts
+    const { rows: recentOrgs } = await query(`
+      SELECT o.id, o.name,
+        (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id = o.id) as vehicles,
+        (SELECT COUNT(*) FROM users u WHERE u.organization_id = o.id) as users,
+        (SELECT COALESCE(tier, plan_type, 'starter') FROM licences l WHERE l.organization_id = o.id ORDER BY l.created_at DESC LIMIT 1) as plan
+      FROM organizations o
+      ORDER BY o.created_at DESC
+      LIMIT 3
+    `);
+
+    // Group organizations created in the last 6 months
+    const { rows: growthOrgs } = await query(`
+      SELECT TO_CHAR(created_at, 'Mon') as month, COUNT(*) as orgs
+      FROM organizations
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(created_at, 'Mon'), DATE_TRUNC('month', created_at)
+      ORDER BY DATE_TRUNC('month', created_at)
+    `);
+
+    const { rows: growthVehicles } = await query(`
+      SELECT TO_CHAR(created_at, 'Mon') as month, COUNT(*) as vehicles
+      FROM vehicles
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(created_at, 'Mon'), DATE_TRUNC('month', created_at)
+      ORDER BY DATE_TRUNC('month', created_at)
+    `);
+
+    // Merge growth chart data
+    const chartDataMap = {};
+    const monthsOrder = [];
+    
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mLabel = d.toLocaleString('en-US', { month: 'short' });
+      chartDataMap[mLabel] = { month: mLabel, orgs: 0, vehicles: 0 };
+      monthsOrder.push(mLabel);
+    }
+
+    growthOrgs.forEach(row => {
+      if (chartDataMap[row.month]) {
+        chartDataMap[row.month].orgs = parseInt(row.orgs);
+      }
+    });
+
+    growthVehicles.forEach(row => {
+      if (chartDataMap[row.month]) {
+        chartDataMap[row.month].vehicles = parseInt(row.vehicles);
+      }
+    });
+
+    const chartData = monthsOrder.map(m => chartDataMap[m]);
+
+    return res.json({
+      success: true,
+      data: {
+        organizationsCount: parseInt(orgsRow[0].count),
+        vehiclesCount: parseInt(vehiclesRow[0].count),
+        usersCount: parseInt(usersRow[0].count),
+        devicesCount: parseInt(devicesRow[0].count),
+        recentOrganizations: recentOrgs.map(o => ({
+          name: o.name,
+          vehicles: parseInt(o.vehicles),
+          users: parseInt(o.users),
+          plan: o.plan || 'starter'
+        })),
+        chartData
+      }
+    });
+  } catch (err) {
+    console.error('Failed to get admin overview stats:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch admin overview statistics' });
+  }
+};
+
+module.exports = { getDistance, getDriverPerformance, getVehiclePerformance, getAdminOverview };

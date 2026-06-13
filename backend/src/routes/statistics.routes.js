@@ -8,5 +8,6 @@ router.use(authenticate);
 router.get('/distance', statisticsController.getDistance);
 router.get('/driver-performance', statisticsController.getDriverPerformance);
 router.get('/vehicle-performance', statisticsController.getVehiclePerformance);
+router.get('/admin-overview', statisticsController.getAdminOverview);
 
 module.exports = router;

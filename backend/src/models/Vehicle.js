@@ -5,10 +5,21 @@ const Vehicle = {
   async create(data) {
     const id = uuidv4();
     const result = await query(
-      `INSERT INTO vehicles (id, vehicle_name, vehicle_identifier, registration_number, device_id, organization_id, gps_sim_no, timezone, apn, licence_issued_date, onboard_date, licence_expire_date, status, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now(),now())
+      `INSERT INTO vehicles (
+        id, vehicle_name, vehicle_identifier, registration_number, device_id, organization_id, 
+        gps_sim_no, timezone, apn, licence_issued_date, onboard_date, licence_expire_date, status, 
+        service_engineer, salesman, ticket_id, sensor_no, odometer, 
+        vehicle_type, make, model, year, color, fuel_type, tank_capacity,
+        created_at, updated_at
+      )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,now(),now())
        RETURNING *`,
-      [id, data.vehicle_name, data.vehicle_identifier, data.registration_number, data.device_id, data.organization_id, data.gps_sim_no, data.timezone || 'Asia/Kolkata', data.apn, data.licence_issued_date, data.onboard_date, data.licence_expire_date, data.status || 'active']
+      [
+        id, data.vehicle_name, data.vehicle_identifier || data.registration_number, data.registration_number, data.device_id, data.organization_id,
+        data.gps_sim_no, data.timezone || 'Asia/Kolkata', data.apn, data.licence_issued_date, data.onboard_date, data.licence_expire_date,
+        data.status || 'active', data.service_engineer, data.salesman, data.ticket_id, data.sensor_no, data.odometer || 0,
+        data.vehicle_type || 'car', data.make || '', data.model || '', data.year || '', data.color || '', data.fuel_type || '', data.tank_capacity || 0
+      ]
     );
     return result.rows[0];
   },
@@ -89,7 +100,7 @@ const Vehicle = {
   },
 
   async update(id, updates) {
-    const allowed = ['vehicle_name', 'vehicle_identifier', 'registration_number', 'device_id', 'gps_sim_no', 'timezone', 'apn', 'licence_issued_date', 'onboard_date', 'licence_expire_date', 'status'];
+    const allowed = ['vehicle_name', 'vehicle_identifier', 'registration_number', 'device_id', 'gps_sim_no', 'timezone', 'apn', 'licence_issued_date', 'onboard_date', 'licence_expire_date', 'status', 'service_engineer', 'salesman', 'ticket_id', 'sensor_no', 'odometer', 'organization_id'];
     const sets = [];
     const values = [];
     let i = 1;

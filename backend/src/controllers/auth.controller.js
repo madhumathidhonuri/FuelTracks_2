@@ -11,7 +11,7 @@ const login = async (req, res) => {
     const loginIdentifier = email || username;
     console.log('--- LOGIN DEBUG ---', { body: req.body, resolvedIdentifier: loginIdentifier });
 
-    const user = await User.findByEmail(loginIdentifier);
+    const user = await User.findByUsername(loginIdentifier);
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -39,8 +39,8 @@ const login = async (req, res) => {
         refreshToken,
         user: {
           id: user.id,
-          username: user.email,
-          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
+          username: user.username || user.email,
+          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email,
           email: user.email,
           role: user.role,
           organizationId: user.organization_id,

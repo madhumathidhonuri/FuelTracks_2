@@ -1,24 +1,125 @@
+import { useState, useEffect } from 'react';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import api from '../../api/axios';
 
 const AdminDashboard = () => {
-  const chartData = [{ month: 'Jan', orgs: 12, vehicles: 145 }, { month: 'Feb', orgs: 15, vehicles: 180 }, { month: 'Mar', orgs: 18, vehicles: 220 }, { month: 'Apr', orgs: 22, vehicles: 265 }, { month: 'May', orgs: 26, vehicles: 310 }, { month: 'Jun', orgs: 30, vehicles: 360 }];
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/statistics/admin-overview');
+        if (res.data.success) {
+          setData(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-lb-100 rounded-[20px]"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-[350px] bg-lb-100 rounded-[20px]"></div>
+          <div className="h-[350px] bg-lb-100 rounded-[20px]"></div>
+        </div>
+        <div className="h-[180px] bg-lb-100 rounded-[20px]"></div>
+      </div>
+    );
+  }
+
+  const {
+    organizationsCount = 0,
+    vehiclesCount = 0,
+    usersCount = 0,
+    devicesCount = 0,
+    recentOrganizations = [],
+    chartData = []
+  } = data || {};
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Organizations" value="30" icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>} trend="+3 this month" trendDirection="up" />
-        <StatCard title="Total Vehicles" value="360" icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>} trend="+24 this week" trendDirection="up" />
-        <StatCard title="Total Users" value="245" icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>} subtitle="Across all orgs" />
-        <StatCard title="Active Devices" value="48" icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>} trend="98.5% online" trendDirection="up" />
+        <StatCard title="Organizations" value={organizationsCount.toString()} icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>} />
+        <StatCard title="Total Vehicles" value={vehiclesCount.toString()} icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>} />
+        <StatCard title="Total Users" value={usersCount.toString()} icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>} subtitle="Across all orgs" />
+        <StatCard title="Active Devices" value={devicesCount.toString()} icon={() => <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2"><h3 className="font-semibold text-sm text-text-primary font-display mb-4">Platform Growth</h3><ResponsiveContainer width="100%" height={280}><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" stroke="rgba(56,175,249,0.1)" /><XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748b' }} /><YAxis tick={{ fontSize: 10, fill: '#64748b' }} /><Tooltip contentStyle={{ backgroundColor: 'rgba(7,81,134,0.88)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px' }} /><Bar dataKey="orgs" fill="#34d8b5" radius={[8, 8, 0, 0]} name="Organizations" /><Bar dataKey="vehicles" fill="#38aff9" radius={[8, 8, 0, 0]} name="Vehicles" /></BarChart></ResponsiveContainer></Card>
-        <Card><h3 className="font-semibold text-sm text-text-primary font-display mb-4">Quick Actions</h3><div className="space-y-3">{[{ label: 'Add Organization', path: '/admin/organizations/add', icon: '🏢' }, { label: 'Add Device', path: '/admin/devices', icon: '📱' }, { label: 'Add Vehicle', path: '/admin/vehicles/add', icon: '🚛' }, { label: 'Create Group', path: '/admin/groups/add', icon: '👥' }, { label: 'Add User', path: '/admin/users/add', icon: '👤' }, { label: 'View Audit Logs', path: '/admin/audit/organizations', icon: '📋' }].map((action) => (<Link key={action.label} to={action.path} className="flex items-center gap-3 p-3 rounded-xl bg-lb-50 hover:bg-[rgba(56,175,249,0.06)] border border-[rgba(56,175,249,0.08)] transition-all group"><span className="text-lg">{action.icon}</span><span className="text-sm font-medium text-text-primary group-hover:text-accent">{action.label}</span><svg className="w-4 h-4 ml-auto text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></Link>))}</div></Card>
+        <Card className="lg:col-span-2">
+          <h3 className="font-semibold text-sm text-text-primary font-display mb-4">Platform Growth</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,175,249,0.1)" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748b' }} />
+              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+              <Tooltip contentStyle={{ backgroundColor: 'rgba(7,81,134,0.88)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px' }} />
+              <Bar dataKey="orgs" fill="#34d8b5" radius={[8, 8, 0, 0]} name="Organizations" />
+              <Bar dataKey="vehicles" fill="#38aff9" radius={[8, 8, 0, 0]} name="Vehicles" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <h3 className="font-semibold text-sm text-text-primary font-display mb-4">Quick Actions</h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Add Organization', path: '/admin/organizations/add', icon: '🏢' },
+              { label: 'Add Device', path: '/admin/devices', icon: '📱' },
+              { label: 'Add Vehicle', path: '/admin/vehicles/add', icon: '🚛' },
+              { label: 'Create Group', path: '/admin/groups/add', icon: '👥' },
+              { label: 'Add User', path: '/admin/users/add', icon: '👤' },
+              { label: 'View Audit Logs', path: '/admin/audit/organizations', icon: '📋' }
+            ].map((action) => (
+              <Link key={action.label} to={action.path} className="flex items-center gap-3 p-3 rounded-xl bg-lb-50 hover:bg-[rgba(56,175,249,0.06)] border border-[rgba(56,175,249,0.08)] transition-all group">
+                <span className="text-lg">{action.icon}</span>
+                <span className="text-sm font-medium text-text-primary group-hover:text-accent">{action.label}</span>
+                <svg className="w-4 h-4 ml-auto text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            ))}
+          </div>
+        </Card>
       </div>
-      <Card><h3 className="font-semibold text-sm text-text-primary font-display mb-4">Recent Organizations</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[{ name: 'Metro Logistics Pvt Ltd', vehicles: 45, users: 12, plan: 'Enterprise' }, { name: 'Swift Transport Co', vehicles: 28, users: 8, plan: 'Professional' }, { name: 'Express Cargo Services', vehicles: 62, users: 18, plan: 'Enterprise' }].map((org) => (<div key={org.name} className="p-4 rounded-xl bg-lb-50 border border-[rgba(56,175,249,0.08)]"><div className="flex items-center justify-between mb-2"><h4 className="text-sm font-semibold text-text-primary">{org.name}</h4><span className="px-2 py-1 text-[9px] font-bold uppercase rounded-lg bg-[rgba(52,216,181,0.18)] text-[#0a8f78]">{org.plan}</span></div><div className="flex gap-4 text-xs text-muted"><span>{org.vehicles} vehicles</span><span>{org.users} users</span></div></div>))}</div></Card>
+      <Card>
+        <h3 className="font-semibold text-sm text-text-primary font-display mb-4">Recent Organizations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {recentOrganizations.length === 0 ? (
+            <div className="col-span-3 py-6 text-center text-xs font-semibold text-lb-500">
+              No organizations found
+            </div>
+          ) : (
+            recentOrganizations.map((org) => (
+              <div key={org.name} className="p-4 rounded-xl bg-lb-50 border border-[rgba(56,175,249,0.08)]">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-text-primary truncate max-w-[180px]">{org.name}</h4>
+                  <span className="px-2 py-1 text-[9px] font-bold uppercase rounded-lg bg-[rgba(52,216,181,0.18)] text-[#0a8f78] truncate max-w-[100px]">{org.plan}</span>
+                </div>
+                <div className="flex gap-4 text-xs text-muted">
+                  <span>{org.vehicles} vehicles</span>
+                  <span>{org.users} users</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   );
 };
+
 export default AdminDashboard;

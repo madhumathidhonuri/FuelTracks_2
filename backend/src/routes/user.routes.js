@@ -13,5 +13,6 @@ router.post('/', validate(schemas.createUser), userController.createUser);
 router.put('/:id', validate(schemas.updateUser), userController.updateUser);
 router.delete('/:id', userController.deleteUser);
 router.post('/:id/groups', validate(schemas.addUsersToGroup), userController.addUserToGroups);
+router.post('/:id/switch', userController.switchLogin);
 
 module.exports = router;
