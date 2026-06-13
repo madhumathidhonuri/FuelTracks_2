@@ -172,6 +172,28 @@ const getAdminOverview = async (req, res) => {
 
     const chartData = monthsOrder.map(m => chartDataMap[m]);
 
+    // Query expired licenses
+    const { rows: expiredLicences } = await query(`
+      SELECT l.id, COALESCE(l.tier, l.plan_type, 'basic') as tier, l.total_count, l.used_count, l.expire_date,
+             o.name as organization_name, o.email as organization_email
+      FROM licences l
+      JOIN organizations o ON l.organization_id = o.id
+      WHERE l.expire_date IS NOT NULL AND l.expire_date < NOW()
+      ORDER BY l.expire_date DESC
+      LIMIT 10
+    `);
+
+    // Query licenses expiring in the next 30 days
+    const { rows: expiringLicences } = await query(`
+      SELECT l.id, COALESCE(l.tier, l.plan_type, 'basic') as tier, l.total_count, l.used_count, l.expire_date,
+             o.name as organization_name, o.email as organization_email
+      FROM licences l
+      JOIN organizations o ON l.organization_id = o.id
+      WHERE l.expire_date IS NOT NULL AND l.expire_date >= NOW() AND l.expire_date <= NOW() + INTERVAL '30 days'
+      ORDER BY l.expire_date ASC
+      LIMIT 10
+    `);
+
     return res.json({
       success: true,
       data: {
@@ -185,7 +207,25 @@ const getAdminOverview = async (req, res) => {
           users: parseInt(o.users),
           plan: o.plan || 'starter'
         })),
-        chartData
+        chartData,
+        expiredLicences: expiredLicences.map(l => ({
+          id: l.id,
+          tier: l.tier,
+          totalCount: parseInt(l.total_count || 0),
+          usedCount: parseInt(l.used_count || 0),
+          expireDate: l.expire_date,
+          organizationName: l.organization_name,
+          organizationEmail: l.organization_email
+        })),
+        expiringLicences: expiringLicences.map(l => ({
+          id: l.id,
+          tier: l.tier,
+          totalCount: parseInt(l.total_count || 0),
+          usedCount: parseInt(l.used_count || 0),
+          expireDate: l.expire_date,
+          organizationName: l.organization_name,
+          organizationEmail: l.organization_email
+        }))
       }
     });
   } catch (err) {

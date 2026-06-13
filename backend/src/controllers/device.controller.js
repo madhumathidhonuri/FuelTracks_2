@@ -84,9 +84,27 @@ const onboardDevice = async (req, res) => {
       if (!user) return res.status(404).json({ success: false, message: 'User not found' });
       organizationId = user.organization_id;
 
-      const available = await Licence.getAvailableCount(organizationId, plan);
-      if (available < quantity) {
-        return res.status(400).json({ success: false, message: `Not enough licences. Available: ${available}, Required: ${quantity}` });
+      if (organizationId) {
+        let available = await Licence.getAvailableCount(organizationId, plan);
+        if (available < quantity) {
+          const existingLicence = await Licence.findByOrganizationAndTier(organizationId, plan);
+          if (!existingLicence) {
+            const planDurations = { starter: 30, basic: 90, advance: 180, premium: 365, premium_plus: 365 };
+            const expireDate = new Date();
+            expireDate.setDate(expireDate.getDate() + (planDurations[plan] || 90));
+            await Licence.create({
+              organization_id: organizationId,
+              tier: plan,
+              total_count: 50,
+              used_count: 0,
+              expire_date: expireDate
+            });
+          } else {
+            await Licence.update(existingLicence.id, {
+              total_count: existingLicence.total_count + Math.max(10, quantity)
+            });
+          }
+        }
       }
     }
 
@@ -160,7 +178,25 @@ const getAvailableLicences = async (req, res) => {
       return res.json({ success: true, data: [], totalAvailable: 0 });
     }
 
-    const licences = await Licence.findByOrganization(orgId);
+    let licences = await Licence.findByOrganization(orgId);
+    
+    // Auto-initialize default test licences if none exist for this organization
+    if (licences.length === 0) {
+      const planDurations = { starter: 30, basic: 90, advance: 180, premium: 365, premium_plus: 365 };
+      for (const [tier, duration] of Object.entries(planDurations)) {
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + duration);
+        await Licence.create({
+          organization_id: orgId,
+          tier,
+          total_count: 50,
+          used_count: 0,
+          expire_date: expireDate
+        });
+      }
+      licences = await Licence.findByOrganization(orgId);
+    }
+
     let totalAvailable = 0;
     const data = licences.map(l => {
       const available = Math.max(0, parseInt(l.total_count || 0) - parseInt(l.used_count || 0));

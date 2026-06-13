@@ -59,7 +59,6 @@ const Organizations = () => {
     try {
       const res = await api.delete(`/organizations/${org.id}`);
       if (res.data.success) {
-        alert('Organization deleted successfully.');
         fetchOrgs();
       }
     } catch (err) {
@@ -119,7 +118,7 @@ const Organizations = () => {
         </div>
       </div>
 
-      <div className="glass-card rounded-[24px] overflow-hidden p-6 space-y-6">
+      <div className="glass-card rounded-[24px] !overflow-visible p-6 space-y-6">
         {/* Table Filters */}
         <div className="flex items-center justify-between flex-wrap gap-4 text-xs font-semibold text-lb-600 dark:text-lb-400">
           <div className="flex items-center gap-2">

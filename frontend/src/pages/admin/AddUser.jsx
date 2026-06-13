@@ -5,6 +5,7 @@ import api from '../../api/axios';
 const AddUser = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const [organizations, setOrganizations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -62,12 +63,13 @@ const AddUser = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     setLoading(true);
 
     // Validate mobile (needs to be 10 digit string matching Joi schema pattern)
     const sanitizedMobile = form.phone.replace(/[^0-9]/g, '');
     if (sanitizedMobile.length !== 10) {
-      alert('Please enter a valid 10-digit mobile number.');
+      setFormError('Please enter a valid 10-digit mobile number.');
       setLoading(false);
       return;
     }
@@ -75,13 +77,7 @@ const AddUser = () => {
     // Validate username (Joi schema pattern: alphanumeric and underscores only)
     const usernameRegex = /^[a-zA-Z0-9_]+$/;
     if (!usernameRegex.test(form.username)) {
-      alert('Username can only contain letters, numbers, and underscores (no spaces).');
-      setLoading(false);
-      return;
-    }
-
-    if (!form.zoho) {
-      alert('Zoho ID is required.');
+      setFormError('Username can only contain letters, numbers, and underscores (no spaces).');
       setLoading(false);
       return;
     }
@@ -93,10 +89,10 @@ const AddUser = () => {
       password: form.password,
       role: form.role,
       organization_id: form.selected_groups[0] || null, // Primary org association
-      company_name: form.company_name,
+      company_name: form.company_name || null,
       user_mode: form.user_mode,
       alternate_email: form.alternate_email || null,
-      zoho: form.zoho,
+      zoho: form.zoho || null,
       enable_debugs: form.enable_debugs,
       selected_groups: form.selected_groups,
     };
@@ -104,12 +100,16 @@ const AddUser = () => {
     try {
       const res = await api.post('/users', payload);
       if (res.data.success) {
-        alert('User created successfully!');
         navigate('/admin/users');
+      } else {
+        setFormError(res.data.message || 'Failed to create user.');
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to create user.');
+      const errMsg = err.response?.data?.errors
+        ? err.response.data.errors.map((e) => e.message).join(', ')
+        : err.response?.data?.message || 'Failed to create user.';
+      setFormError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -137,6 +137,13 @@ const AddUser = () => {
       </div>
 
       <div className="glass-card rounded-[24px] p-8">
+        {/* Error Banner */}
+        {formError && (
+          <div className="flex items-center gap-2.5 px-4 py-3 mb-5 bg-red-50 dark:bg-red-950/25 border border-red-200 dark:border-red-800/40 rounded-2xl text-xs font-semibold text-red-600 dark:text-red-400">
+            <i className="fa-solid fa-circle-exclamation text-sm flex-shrink-0"></i>
+            <span>{formError}</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             {/* Column 1 */}
@@ -236,15 +243,14 @@ const AddUser = () => {
 
               <div>
                 <label className="block text-[11px] font-bold text-lb-700 dark:text-lb-300 mb-1.5 uppercase tracking-wider">
-                  Zoho<span className="text-red-500">*</span>
+                  Zoho
                 </label>
                 <input
                   type="text"
-                  placeholder="Zoho"
+                  placeholder="Zoho (optional)"
                   value={form.zoho}
                   onChange={(e) => setForm({ ...form, zoho: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-[rgba(218,241,255,0.4)] dark:bg-[rgba(13,30,38,0.5)] border border-[rgba(61,122,138,0.25)] rounded-xl focus:outline-none focus:border-[#3d7a8a] text-xs font-medium dark:text-white transition-all shadow-sm"
-                  required
                 />
               </div>
 

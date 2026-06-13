@@ -167,6 +167,7 @@ const schemas = {
 
   updateGroup: Joi.object({
     name: Joi.string().required().max(255),
+    vehicle_ids: Joi.array().items(Joi.string().uuid()).default([]),
   }),
 
   addVehiclesToGroup: Joi.object({

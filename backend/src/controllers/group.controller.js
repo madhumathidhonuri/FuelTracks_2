@@ -77,11 +77,30 @@ const createGroup = async (req, res) => {
 
 const updateGroup = async (req, res) => {
   try {
+    const { name, vehicle_ids } = req.body;
     const group = await Group.findById(req.params.id);
     if (!group) return res.status(404).json({ success: false, message: 'Group not found' });
-    const updated = await Group.update(req.params.id, req.body);
+
+    const updated = await Group.update(req.params.id, { name });
+
+    if (vehicle_ids && Array.isArray(vehicle_ids)) {
+      const currentVehicles = await Group.getVehicles(req.params.id);
+      const currentIds = currentVehicles.map(v => v.id);
+
+      const toAdd = vehicle_ids.filter(id => !currentIds.includes(id));
+      const toRemove = currentIds.filter(id => !vehicle_ids.includes(id));
+
+      for (const vehicleId of toAdd) {
+        await Group.addVehicle(req.params.id, vehicleId);
+      }
+      for (const vehicleId of toRemove) {
+        await Group.removeVehicle(req.params.id, vehicleId);
+      }
+    }
+
     return res.json({ success: true, message: 'Group updated', data: updated });
   } catch (err) {
+    console.error('Update group error:', err);
     return res.status(500).json({ success: false, message: 'Failed to update group' });
   }
 };

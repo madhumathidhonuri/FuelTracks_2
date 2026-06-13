@@ -5,6 +5,7 @@ import api from '../../api/axios';
 const AddGroup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const [vehicles, setVehicles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -53,8 +54,9 @@ const AddGroup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     if (!form.name.trim()) {
-      alert('Please enter a group name.');
+      setFormError('Please enter a group name.');
       return;
     }
 
@@ -68,12 +70,13 @@ const AddGroup = () => {
     try {
       const res = await api.post('/groups', payload);
       if (res.data.success) {
-        alert('Group created successfully!');
         navigate('/admin/groups');
+      } else {
+        setFormError(res.data.message || 'Failed to create group.');
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to create group.');
+      setFormError(err.response?.data?.message || 'Failed to create group.');
     } finally {
       setLoading(false);
     }
@@ -103,6 +106,12 @@ const AddGroup = () => {
       </div>
 
       <div className="glass-card rounded-[24px] p-8">
+        {formError && (
+          <div className="flex items-center gap-2.5 px-4 py-3 mb-5 bg-red-50 dark:bg-red-950/25 border border-red-200 dark:border-red-800/40 rounded-2xl text-xs font-semibold text-red-600 dark:text-red-400">
+            <i className="fa-solid fa-circle-exclamation text-sm flex-shrink-0"></i>
+            <span>{formError}</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Group Name & Submit Block */}
           <div className="flex items-end gap-4 max-w-lg mb-6">

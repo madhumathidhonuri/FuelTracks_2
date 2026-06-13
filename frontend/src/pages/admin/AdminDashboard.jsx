@@ -48,7 +48,9 @@ const AdminDashboard = () => {
     usersCount = 0,
     devicesCount = 0,
     recentOrganizations = [],
-    chartData = []
+    chartData = [],
+    expiredLicences = [],
+    expiringLicences = []
   } = data || {};
 
   return (
@@ -95,6 +97,97 @@ const AdminDashboard = () => {
           </div>
         </Card>
       </div>
+
+      {/* License Renewals and Expirations Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm text-text-primary font-display flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#f87171] inline-block animate-pulse"></span>
+              Expired Licenses (Needs Renewal)
+            </h3>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[rgba(248,113,113,0.12)] text-[#b91c1c]">
+              {expiredLicences.length}
+            </span>
+          </div>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+            {expiredLicences.length === 0 ? (
+              <div className="py-8 text-center text-xs font-semibold text-lb-500">
+                No expired licenses
+              </div>
+            ) : (
+              expiredLicences.map(lic => (
+                <div key={lic.id} className="alert-item flex items-center gap-3 p-3 rounded-[14px] border border-[rgba(61,122,138,0.15)] bg-[rgba(240,248,255,0.7)] transition-all duration-200">
+                  <div className="w-10 h-10 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[16px] bg-[rgba(248,113,113,0.12)] text-[#b91c1c]">
+                    <i className="fa-solid fa-circle-xmark"></i>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-text-primary truncate">{lic.organizationName}</h4>
+                      <span className="px-2 py-0.5 text-[9px] font-bold uppercase rounded-lg bg-[rgba(248,113,113,0.18)] text-[#b91c1c]">
+                        {lic.tier}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
+                      <span className="truncate max-w-[150px]" title={lic.organizationEmail}>{lic.organizationEmail}</span>
+                      <span>{lic.usedCount} / {lic.totalCount} devices</span>
+                      <span className="font-semibold text-[#b91c1c]">
+                        Expired: {new Date(lic.expireDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm text-text-primary font-display flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] inline-block animate-pulse"></span>
+              Expiring Licenses (Next 30 Days)
+            </h3>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[rgba(251,191,36,0.12)] text-[#92650a]">
+              {expiringLicences.length}
+            </span>
+          </div>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+            {expiringLicences.length === 0 ? (
+              <div className="py-8 text-center text-xs font-semibold text-lb-500">
+                No licenses expiring soon
+              </div>
+            ) : (
+              expiringLicences.map(lic => {
+                const daysLeft = Math.ceil((new Date(lic.expireDate) - new Date()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div key={lic.id} className="alert-item flex items-center gap-3 p-3 rounded-[14px] border border-[rgba(61,122,138,0.15)] bg-[rgba(240,248,255,0.7)] transition-all duration-200">
+                    <div className="w-10 h-10 rounded-[10px] flex-shrink-0 flex items-center justify-center text-[16px] bg-[rgba(251,191,36,0.12)] text-[#92650a]">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-text-primary truncate">{lic.organizationName}</h4>
+                        <span className="px-2 py-0.5 text-[9px] font-bold uppercase rounded-lg bg-[rgba(251,191,36,0.18)] text-[#92650a]">
+                          {lic.tier}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
+                        <span className="truncate max-w-[150px]" title={lic.organizationEmail}>{lic.organizationEmail}</span>
+                        <span>{lic.usedCount} / {lic.totalCount} devices</span>
+                        <span className="font-semibold text-[#92650a]">
+                          {daysLeft <= 0 ? 'Expiring today' : `Expires in ${daysLeft} days`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      </div>
+
       <Card>
         <h3 className="font-semibold text-sm text-text-primary font-display mb-4">Recent Organizations</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

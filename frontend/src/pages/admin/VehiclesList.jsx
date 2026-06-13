@@ -33,6 +33,9 @@ const VehiclesList = () => {
     organization_id: '',
     status: 'active',
   });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -130,12 +133,17 @@ const VehiclesList = () => {
       organization_id: v.organization_id || '',
       status: v.status || 'active',
     });
+    setEditError('');
+    setEditSuccess(false);
     setShowEditModal(true);
     setActiveMenu(null);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    setEditLoading(true);
+    setEditError('');
+    setEditSuccess(false);
     try {
       const payload = {
         ...editForm,
@@ -145,13 +153,20 @@ const VehiclesList = () => {
       };
       const res = await api.put(`/vehicles/${selectedVehicle.id}`, payload);
       if (res.data.success) {
-        alert('Vehicle updated successfully.');
-        setShowEditModal(false);
+        setEditSuccess(true);
         fetchVehicles();
+        setTimeout(() => {
+          setShowEditModal(false);
+          setEditSuccess(false);
+        }, 1000);
+      } else {
+        setEditError(res.data.message || 'Failed to update vehicle.');
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to update vehicle.');
+      setEditError(err.response?.data?.message || 'Failed to update vehicle.');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -163,8 +178,9 @@ const VehiclesList = () => {
     try {
       const res = await api.delete(`/vehicles/${v.id}`);
       if (res.data.success) {
-        alert('Vehicle deleted successfully.');
         fetchVehicles();
+      } else {
+        alert(res.data.message || 'Failed to delete vehicle.');
       }
     } catch (err) {
       console.error(err);
@@ -212,7 +228,7 @@ const VehiclesList = () => {
       </div>
 
       {/* List Panel */}
-      <div className="glass-card rounded-[24px] p-6 space-y-6">
+      <div className="glass-card rounded-[24px] !overflow-visible p-6 space-y-6">
         {/* Filters */}
         <div className="flex items-center justify-between flex-wrap gap-4 text-xs font-semibold text-lb-600 dark:text-lb-400">
           <div className="flex items-center gap-2">
@@ -381,15 +397,42 @@ const VehiclesList = () => {
       {/* Edit Vehicle Modal */}
       {showEditModal && selectedVehicle && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-4 backdrop-blur-sm animate-fadeIn">
-          <div className="glass-card rounded-[24px] max-w-2xl w-full overflow-hidden p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-[rgba(61,122,138,0.15)] pb-4">
-              <h3 className="text-lg font-bold font-display text-lb-800 dark:text-white">Edit Vehicle Settings</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-lb-400 hover:text-lb-700 text-lg">
+          <div className="glass-card rounded-[28px] max-w-2xl w-full overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="relative px-7 pt-7 pb-5 border-b border-[rgba(61,122,138,0.15)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[rgba(61,122,138,0.3)] to-[rgba(29,100,120,0.15)] border border-[rgba(61,122,138,0.35)] flex items-center justify-center shadow-sm">
+                  <i className="fa-solid fa-car text-[#3d7a8a] text-sm"></i>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-display text-lb-800 dark:text-white">Edit Vehicle</h3>
+                  <p className="text-[10px] text-lb-400 font-semibold mt-0.5">{selectedVehicle.vehicle_name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEditModal(false)}
+                disabled={editLoading}
+                className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-xl bg-[rgba(61,122,138,0.08)] hover:bg-[rgba(61,122,138,0.18)] text-lb-500 hover:text-lb-800 dark:text-lb-400 dark:hover:text-white transition-all text-sm disabled:opacity-40"
+              >
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4 text-xs font-semibold max-h-[70vh] overflow-y-auto pr-1">
+            <form onSubmit={handleEditSubmit} className="px-7 py-6 space-y-4 text-xs font-semibold max-h-[70vh] overflow-y-auto pr-1">
+              {/* Error Banner */}
+              {editError && (
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 dark:bg-red-950/25 border border-red-200 dark:border-red-800/40 rounded-2xl text-xs font-semibold text-red-600 dark:text-red-400">
+                  <i className="fa-solid fa-circle-exclamation text-sm flex-shrink-0"></i>
+                  <span>{editError}</span>
+                </div>
+              )}
+              {/* Success Banner */}
+              {editSuccess && (
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <i className="fa-solid fa-circle-check text-sm flex-shrink-0"></i>
+                  <span>Vehicle updated successfully!</span>
+                </div>
+              )}              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] text-lb-400 uppercase tracking-wider mb-1.5">Vehicle Name</label>
@@ -538,15 +581,23 @@ const VehiclesList = () => {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-gray-500/80 to-gray-600/80 hover:from-gray-500 hover:to-gray-600 text-white font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
+                  disabled={editLoading}
+                  className="px-5 py-2.5 bg-[rgba(61,122,138,0.08)] hover:bg-[rgba(61,122,138,0.15)] dark:bg-[rgba(255,255,255,0.05)] dark:hover:bg-[rgba(255,255,255,0.1)] border border-[rgba(61,122,138,0.2)] text-lb-700 dark:text-lb-300 font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-gradient-to-r from-[rgba(29,100,120,0.18)] to-[rgba(15,60,80,0.14)] dark:from-[rgba(61,122,138,0.35)] dark:to-[rgba(20,42,54,0.25)] border border-[rgba(61,122,138,0.45)] hover:from-[rgba(29,100,120,0.28)] hover:to-[rgba(15,60,80,0.22)] shadow-md text-lb-800 dark:text-white rounded-xl text-xs font-bold transition-all duration-200 hover:-translate-y-0.5"
+                  disabled={editLoading || editSuccess}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#1d6478] to-[#0f3c50] hover:from-[#206070] hover:to-[#0d3448] text-white font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5 shadow-md flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {editLoading ? (
+                    <><i className="fa-solid fa-spinner fa-spin text-[10px]"></i> Saving...</>
+                  ) : editSuccess ? (
+                    <><i className="fa-solid fa-check text-[10px]"></i> Saved!</>
+                  ) : (
+                    <><i className="fa-solid fa-floppy-disk text-[10px]"></i> Save Changes</>
+                  )}
                 </button>
               </div>
             </form>
