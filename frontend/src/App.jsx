@@ -10,6 +10,7 @@ import Statistics from './pages/user/Statistics';
 import Analytics from './pages/user/Analytics';
 import Sensors from './pages/user/Sensors';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import Billing from './pages/admin/Billing';
 import Organizations from './pages/admin/Organizations';
 import AddOrganization from './pages/admin/AddOrganization';
 import EditOrganization from './pages/admin/EditOrganization';
@@ -49,6 +50,7 @@ function App() {
         <Route path="/analytics" element={<LayoutRoute element={Analytics} layout={UserLayout} pageTitle="Analytics" pageSubtitle="Movement, idle & overspeed analysis" />} />
         <Route path="/sensors" element={<LayoutRoute element={Sensors} layout={UserLayout} pageTitle="Sensors" pageSubtitle="Engine & sensor data monitoring" />} />
         <Route path="/admin" element={<LayoutRoute element={AdminDashboard} layout={AdminLayout} pageTitle="Admin Overview" pageSubtitle="System-wide fleet management" />} />
+        <Route path="/admin/billing" element={<LayoutRoute element={Billing} layout={AdminLayout} pageTitle="Billing" pageSubtitle="Manage licences & subscriptions" />} />
         <Route path="/admin/organizations" element={<LayoutRoute element={Organizations} layout={AdminLayout} pageTitle="Organizations" pageSubtitle="Manage fleet organizations" />} />
         <Route path="/admin/organizations/add" element={<LayoutRoute element={AddOrganization} layout={AdminLayout} pageTitle="Add Organization" />} />
         <Route path="/admin/organizations/edit/:id" element={<LayoutRoute element={EditOrganization} layout={AdminLayout} pageTitle="Edit Organization" />} />

@@ -218,6 +218,231 @@ const getAvailableLicences = async (req, res) => {
   }
 };
 
+const getBillingOverview = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', tab = 'all' } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+    const { query } = require('../config/db');
+
+    // 1. Get licence summary totals (Total & Available) by tier
+    const { rows: licenceTiersRow } = await query(`
+      SELECT 
+        COALESCE(tier, plan_type, 'basic') as tier,
+        SUM(total_count) as total,
+        SUM(used_count) as used
+      FROM licences
+      GROUP BY COALESCE(tier, plan_type, 'basic')
+    `);
+
+    const totalSummary = { starter: 0, basic: 0, advance: 0, premium: 0, premium_plus: 0 };
+    const availableSummary = { starter: 0, basic: 0, advance: 0, premium: 0, premium_plus: 0 };
+
+    const tierConfig = {
+      starter_plus: { name: 'Starter Plus', dbKeys: ['starter_plus', 'starter-plus', 'starter plus'] },
+      starter: { name: 'Starter', dbKeys: ['starter'] },
+      basic: { name: 'Basic', dbKeys: ['basic'] },
+      advance: { name: 'Advance', dbKeys: ['advance', 'advanced'] },
+      premium: { name: 'Premium', dbKeys: ['premium'] },
+      premium_plus: { name: 'Premium Plus', dbKeys: ['premium_plus', 'premium-plus', 'premium plus'] }
+    };
+
+    licenceTiersRow.forEach(row => {
+      const dbTier = (row.tier || '').toLowerCase().trim();
+      let matchedKey = null;
+      for (const [key, config] of Object.entries(tierConfig)) {
+        if (config.dbKeys.includes(dbTier)) {
+          matchedKey = key;
+          break;
+        }
+      }
+
+      if (matchedKey) {
+        // Map starter_plus to starter for standard overview box
+        const mapKey = matchedKey === 'starter_plus' ? 'starter' : matchedKey;
+        if (totalSummary[mapKey] !== undefined) {
+          totalSummary[mapKey] += parseInt(row.total || 0);
+          availableSummary[mapKey] += Math.max(0, parseInt(row.total || 0) - parseInt(row.used || 0));
+        }
+      } else {
+        totalSummary.basic += parseInt(row.total || 0);
+        availableSummary.basic += Math.max(0, parseInt(row.total || 0) - parseInt(row.used || 0));
+      }
+    });
+
+    // 2. Query individual devices / licences
+    let whereClause = 'WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+
+    if (search) {
+      whereClause += ` AND (d.imei ILIKE $${paramIndex} OR d.device_name ILIKE $${paramIndex} OR v.registration_number ILIKE $${paramIndex} OR v.vehicle_name ILIKE $${paramIndex} OR o.name ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (tab === 'renew') {
+      whereClause += ` AND d.licence_expire_date <= NOW() + INTERVAL '30 days'`;
+    } else if (tab === 'pre-renewed') {
+      whereClause += ` AND d.status = 'pre-renewed'`;
+    } else if (tab === 'expired') {
+      whereClause += ` AND d.licence_expire_date < NOW()`;
+    }
+
+    // Paginated query
+    const listQuery = `
+      SELECT 
+        d.id as id,
+        d.imei,
+        d.device_name,
+        d.model as device_model,
+        d.plan as plan_type,
+        d.status as device_status,
+        d.onboard_date,
+        d.licence_expire_date,
+        v.registration_number,
+        v.vehicle_name,
+        v.gps_sim_no,
+        v.licence_issued_date,
+        o.name as organization_name,
+        o.id as organization_id,
+        u.username as dealer_name
+      FROM devices d
+      LEFT JOIN vehicles v ON d.id = v.device_id
+      LEFT JOIN organizations o ON d.organization_id = o.id
+      LEFT JOIN users u ON d.assigned_user_id = u.id
+      ${whereClause}
+      ORDER BY d.licence_expire_date ASC, d.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) 
+      FROM devices d
+      LEFT JOIN vehicles v ON d.id = v.device_id
+      LEFT JOIN organizations o ON d.organization_id = o.id
+      LEFT JOIN users u ON d.assigned_user_id = u.id
+      ${whereClause}
+    `;
+
+    const listParams = [...params, limitNum, offset];
+    const { rows: listResult } = await query(listQuery, listParams);
+    const { rows: countResult } = await query(countQuery, params);
+    const totalCount = parseInt(countResult[0].count);
+
+    return res.json({
+      success: true,
+      data: {
+        totalSummary,
+        availableSummary,
+        licences: listResult,
+        total: totalCount,
+        page: parseInt(page),
+        limit: limitNum
+      }
+    });
+  } catch (err) {
+    console.error('getBillingOverview error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch billing overview' });
+  }
+};
+
+const renewDeviceLicence = async (req, res) => {
+  try {
+    const { deviceIds } = req.body;
+    if (!deviceIds || (Array.isArray(deviceIds) && deviceIds.length === 0)) {
+      return res.status(400).json({ success: false, message: 'Device ID(s) required' });
+    }
+
+    const ids = Array.isArray(deviceIds) ? deviceIds : [deviceIds];
+    const planDurations = { starter: 30, basic: 90, advance: 180, premium: 365, premium_plus: 365 };
+    const { query } = require('../config/db');
+
+    let successCount = 0;
+
+    for (const deviceId of ids) {
+      const { rows: devRow } = await query('SELECT * FROM devices WHERE id = $1', [deviceId]);
+      if (devRow.length === 0) continue;
+      const device = devRow[0];
+
+      const plan = device.plan || 'basic';
+      const duration = planDurations[plan] || 90;
+      
+      const currentExpire = device.licence_expire_date ? new Date(device.licence_expire_date) : new Date();
+      const isExpired = currentExpire < new Date();
+
+      let newExpire = new Date(currentExpire);
+      let newStatus = 'active';
+
+      if (isExpired) {
+        newExpire = new Date();
+        newExpire.setDate(newExpire.getDate() + duration);
+      } else {
+        newExpire.setDate(newExpire.getDate() + duration);
+        newStatus = 'pre-renewed';
+      }
+
+      await query(
+        `UPDATE devices SET licence_expire_date = $1, status = $2, updated_at = NOW() WHERE id = $3`,
+        [newExpire, newStatus, deviceId]
+      );
+
+      await query(
+        `UPDATE vehicles SET licence_expire_date = $1, status = $2, updated_at = NOW() WHERE device_id = $3`,
+        [newExpire, newStatus, deviceId]
+      );
+
+      successCount++;
+    }
+
+    return res.json({ success: true, message: `Successfully renewed ${successCount} licence(s)` });
+  } catch (err) {
+    console.error('renewDeviceLicence error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to renew licence(s)' });
+  }
+};
+
+const cancelPreRenewDeviceLicence = async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    if (!deviceId) return res.status(400).json({ success: false, message: 'Device ID required' });
+    const { query } = require('../config/db');
+
+    const { rows: devRow } = await query('SELECT * FROM devices WHERE id = $1', [deviceId]);
+    if (devRow.length === 0) return res.status(404).json({ success: false, message: 'Device not found' });
+    const device = devRow[0];
+
+    if (device.status !== 'pre-renewed') {
+      return res.status(400).json({ success: false, message: 'Device is not in pre-renewed state' });
+    }
+
+    const planDurations = { starter: 30, basic: 90, advance: 180, premium: 365, premium_plus: 365 };
+    const plan = device.plan || 'basic';
+    const duration = planDurations[plan] || 90;
+
+    const currentExpire = new Date(device.licence_expire_date);
+    let newExpire = new Date(currentExpire);
+    newExpire.setDate(newExpire.getDate() - duration);
+
+    const newStatus = newExpire < new Date() ? 'expired' : 'active';
+
+    await query(
+      `UPDATE devices SET licence_expire_date = $1, status = $2, updated_at = NOW() WHERE id = $3`,
+      [newExpire, newStatus, deviceId]
+    );
+
+    await query(
+      `UPDATE vehicles SET licence_expire_date = $1, status = $2, updated_at = NOW() WHERE device_id = $3`,
+      [newExpire, newStatus, deviceId]
+    );
+
+    return res.json({ success: true, message: 'Successfully cancelled pre-renewal' });
+  } catch (err) {
+    console.error('cancelPreRenewDeviceLicence error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to cancel pre-renewal' });
+  }
+};
+
 const updateDevice = async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
@@ -240,4 +465,15 @@ const deleteDevice = async (req, res) => {
   }
 };
 
-module.exports = { getDevices, getDeviceById, checkImei, onboardDevice, updateDevice, deleteDevice, getAvailableLicences };
+module.exports = { 
+  getDevices, 
+  getDeviceById, 
+  checkImei, 
+  onboardDevice, 
+  updateDevice, 
+  deleteDevice, 
+  getAvailableLicences,
+  getBillingOverview,
+  renewDeviceLicence,
+  cancelPreRenewDeviceLicence
+};

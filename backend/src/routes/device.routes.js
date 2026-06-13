@@ -8,6 +8,9 @@ const { requireAdmin } = require('../middleware/role.middleware');
 router.use(authenticate, requireAdmin);
 
 router.get('/licences/available', deviceController.getAvailableLicences);
+router.get('/licences/billing-overview', deviceController.getBillingOverview);
+router.post('/licences/renew', deviceController.renewDeviceLicence);
+router.post('/licences/cancel-pre-renew', deviceController.cancelPreRenewDeviceLicence);
 router.get('/', deviceController.getDevices);
 router.get('/:id', deviceController.getDeviceById);
 router.get('/check/:imei', deviceController.checkImei);

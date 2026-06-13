@@ -112,102 +112,109 @@ const getAdminOverview = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied: Admin only' });
     }
 
-    const { rows: orgsRow } = await query('SELECT COUNT(*) FROM organizations');
+    const { rows: usersRow } = await query(`SELECT COUNT(*) FROM users WHERE role NOT IN ('superadmin', 'admin')`);
+    const { rows: groupsRow } = await query('SELECT COUNT(*) FROM groups');
     const { rows: vehiclesRow } = await query('SELECT COUNT(*) FROM vehicles');
-    const { rows: usersRow } = await query('SELECT COUNT(*) FROM users');
-    const { rows: devicesRow } = await query("SELECT COUNT(*) FROM devices WHERE status = 'active'");
 
-    // Query 3 recent organizations with counts
-    const { rows: recentOrgs } = await query(`
-      SELECT o.id, o.name,
-        (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id = o.id) as vehicles,
-        (SELECT COUNT(*) FROM users u WHERE u.organization_id = o.id) as users,
-        (SELECT COALESCE(tier, plan_type, 'starter') FROM licences l WHERE l.organization_id = o.id ORDER BY l.created_at DESC LIMIT 1) as plan
-      FROM organizations o
-      ORDER BY o.created_at DESC
-      LIMIT 3
+    // Query license counts by tier
+    const { rows: licenceTiersRow } = await query(`
+      SELECT 
+        COALESCE(tier, plan_type, 'basic') as tier,
+        SUM(total_count) as total,
+        SUM(used_count) as used
+      FROM licences
+      GROUP BY COALESCE(tier, plan_type, 'basic')
     `);
 
-    // Group organizations created in the last 6 months
-    const { rows: growthOrgs } = await query(`
-      SELECT TO_CHAR(created_at, 'Mon') as month, COUNT(*) as orgs
-      FROM organizations
-      WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY TO_CHAR(created_at, 'Mon'), DATE_TRUNC('month', created_at)
-      ORDER BY DATE_TRUNC('month', created_at)
-    `);
+    // Define standard tiers and their display names & DB mappings
+    const tierConfig = {
+      starter_plus: { name: 'Starter Plus', dbKeys: ['starter_plus', 'starter plus', 'starter-plus'] },
+      starter: { name: 'Starter', dbKeys: ['starter'] },
+      basic: { name: 'Basic', dbKeys: ['basic'] },
+      advance: { name: 'Advance', dbKeys: ['advance', 'advanced'] },
+      premium: { name: 'Premium', dbKeys: ['premium'] },
+      premium_plus: { name: 'Premium Plus', dbKeys: ['premium_plus', 'premium plus', 'premium-plus'] }
+    };
 
-    const { rows: growthVehicles } = await query(`
-      SELECT TO_CHAR(created_at, 'Mon') as month, COUNT(*) as vehicles
-      FROM vehicles
-      WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY TO_CHAR(created_at, 'Mon'), DATE_TRUNC('month', created_at)
-      ORDER BY DATE_TRUNC('month', created_at)
-    `);
+    // Initialize statistics object
+    const licenceTiers = {
+      starter_plus: { tier: 'starter_plus', displayName: 'Starter Plus', total: 0, used: 0, available: 0 },
+      starter: { tier: 'starter', displayName: 'Starter', total: 0, used: 0, available: 0 },
+      basic: { tier: 'basic', displayName: 'Basic', total: 0, used: 0, available: 0 },
+      advance: { tier: 'advance', displayName: 'Advance', total: 0, used: 0, available: 0 },
+      premium: { tier: 'premium', displayName: 'Premium', total: 0, used: 0, available: 0 },
+      premium_plus: { tier: 'premium_plus', displayName: 'Premium Plus', total: 0, used: 0, available: 0 }
+    };
 
-    // Merge growth chart data
-    const chartDataMap = {};
-    const monthsOrder = [];
-    
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const mLabel = d.toLocaleString('en-US', { month: 'short' });
-      chartDataMap[mLabel] = { month: mLabel, orgs: 0, vehicles: 0 };
-      monthsOrder.push(mLabel);
-    }
+    // Aggregate database results
+    licenceTiersRow.forEach(row => {
+      const dbTier = (row.tier || '').toLowerCase().trim();
+      
+      // Find which category it falls into
+      let matchedKey = null;
+      for (const [key, config] of Object.entries(tierConfig)) {
+        if (config.dbKeys.includes(dbTier)) {
+          matchedKey = key;
+          break;
+        }
+      }
 
-    growthOrgs.forEach(row => {
-      if (chartDataMap[row.month]) {
-        chartDataMap[row.month].orgs = parseInt(row.orgs);
+      if (matchedKey) {
+        licenceTiers[matchedKey].total += parseInt(row.total || 0);
+        licenceTiers[matchedKey].used += parseInt(row.used || 0);
+      } else {
+        licenceTiers.basic.total += parseInt(row.total || 0);
+        licenceTiers.basic.used += parseInt(row.used || 0);
       }
     });
 
-    growthVehicles.forEach(row => {
-      if (chartDataMap[row.month]) {
-        chartDataMap[row.month].vehicles = parseInt(row.vehicles);
-      }
+    // Calculate available count for each tier and total count
+    let totalLicences = { tier: 'total', displayName: 'Total Licences', total: 0, used: 0, available: 0 };
+
+    const licenceTiersList = Object.values(licenceTiers).map(t => {
+      t.available = Math.max(0, t.total - t.used);
+      totalLicences.total += t.total;
+      totalLicences.used += t.used;
+      return t;
     });
 
-    const chartData = monthsOrder.map(m => chartDataMap[m]);
+    totalLicences.available = Math.max(0, totalLicences.total - totalLicences.used);
 
     // Query expired licenses
     const { rows: expiredLicences } = await query(`
       SELECT l.id, COALESCE(l.tier, l.plan_type, 'basic') as tier, l.total_count, l.used_count, l.expire_date,
-             o.name as organization_name, o.email as organization_email
+             o.name as organization_name, o.email as organization_email,
+             o.phone as organization_phone, o.mobile as organization_mobile,
+             o.address as organization_address, o.city as organization_city,
+             o.state as organization_state
       FROM licences l
       JOIN organizations o ON l.organization_id = o.id
       WHERE l.expire_date IS NOT NULL AND l.expire_date < NOW()
       ORDER BY l.expire_date DESC
-      LIMIT 10
+      LIMIT 20
     `);
 
     // Query licenses expiring in the next 30 days
     const { rows: expiringLicences } = await query(`
       SELECT l.id, COALESCE(l.tier, l.plan_type, 'basic') as tier, l.total_count, l.used_count, l.expire_date,
-             o.name as organization_name, o.email as organization_email
+             o.name as organization_name, o.email as organization_email,
+             o.phone as organization_phone, o.mobile as organization_mobile,
+             o.address as organization_address, o.city as organization_city,
+             o.state as organization_state
       FROM licences l
       JOIN organizations o ON l.organization_id = o.id
       WHERE l.expire_date IS NOT NULL AND l.expire_date >= NOW() AND l.expire_date <= NOW() + INTERVAL '30 days'
       ORDER BY l.expire_date ASC
-      LIMIT 10
+      LIMIT 20
     `);
 
     return res.json({
       success: true,
       data: {
-        organizationsCount: parseInt(orgsRow[0].count),
-        vehiclesCount: parseInt(vehiclesRow[0].count),
         usersCount: parseInt(usersRow[0].count),
-        devicesCount: parseInt(devicesRow[0].count),
-        recentOrganizations: recentOrgs.map(o => ({
-          name: o.name,
-          vehicles: parseInt(o.vehicles),
-          users: parseInt(o.users),
-          plan: o.plan || 'starter'
-        })),
-        chartData,
+        groupsCount: parseInt(groupsRow[0].count),
+        vehiclesCount: parseInt(vehiclesRow[0].count),
+        licenceTiers: [...licenceTiersList, totalLicences],
         expiredLicences: expiredLicences.map(l => ({
           id: l.id,
           tier: l.tier,
@@ -215,7 +222,11 @@ const getAdminOverview = async (req, res) => {
           usedCount: parseInt(l.used_count || 0),
           expireDate: l.expire_date,
           organizationName: l.organization_name,
-          organizationEmail: l.organization_email
+          organizationEmail: l.organization_email,
+          organizationPhone: l.organization_phone || l.organization_mobile || null,
+          organizationAddress: l.organization_address || null,
+          organizationCity: l.organization_city || null,
+          organizationState: l.organization_state || null
         })),
         expiringLicences: expiringLicences.map(l => ({
           id: l.id,
@@ -224,7 +235,11 @@ const getAdminOverview = async (req, res) => {
           usedCount: parseInt(l.used_count || 0),
           expireDate: l.expire_date,
           organizationName: l.organization_name,
-          organizationEmail: l.organization_email
+          organizationEmail: l.organization_email,
+          organizationPhone: l.organization_phone || l.organization_mobile || null,
+          organizationAddress: l.organization_address || null,
+          organizationCity: l.organization_city || null,
+          organizationState: l.organization_state || null
         }))
       }
     });

@@ -20,22 +20,23 @@ const Sidebar = ({ user }) => {
 
 
   const userLinks = [
-    { path: '/dashboard',  icon: 'fa-gauge-high',         label: 'Dashboard'     },
-    { path: '/track',      icon: 'fa-location-dot',       label: 'Live Tracking' },
-    { path: '/history',    icon: 'fa-clock-rotate-left',  label: 'History'       },
-    { path: '/reports',    icon: 'fa-chart-line',         label: 'Reports'       },
-    { path: '/statistics', icon: 'fa-chart-bar',          label: 'Statistics'    },
-    { path: '/analytics',  icon: 'fa-chart-pie',          label: 'Analytics'     },
-    { path: '/sensors',    icon: 'fa-heart-pulse',        label: 'Sensors'       },
+    { path: '/dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
+    { path: '/track', icon: 'fa-location-dot', label: 'Live Tracking' },
+    { path: '/history', icon: 'fa-clock-rotate-left', label: 'History' },
+    { path: '/reports', icon: 'fa-chart-line', label: 'Reports' },
+    { path: '/statistics', icon: 'fa-chart-bar', label: 'Statistics' },
+    { path: '/analytics', icon: 'fa-chart-pie', label: 'Analytics' },
+    { path: '/sensors', icon: 'fa-heart-pulse', label: 'Sensors' },
   ];
 
   const adminLinks = [
-    { path: '/admin',                  icon: 'fa-screwdriver-wrench',   label: 'Overview'       },
-    { path: '/admin/organizations',    icon: 'fa-sitemap',              label: 'Organizations'  },
-    { path: '/admin/devices',          icon: 'fa-tablet-screen-button', label: 'Devices'        },
-    { path: '/admin/groups',           icon: 'fa-users-gear',           label: 'Groups'         },
-    { path: '/admin/users',            icon: 'fa-users',                label: 'Users'          },
-    { path: '/admin/settings',         icon: 'fa-gear',                 label: 'Settings'       },
+    { path: '/admin', icon: 'fa-screwdriver-wrench', label: 'Overview' },
+    { path: '/admin/billing', icon: 'fa-credit-card', label: 'Billing' },
+    { path: '/admin/organizations', icon: 'fa-sitemap', label: 'Organizations' },
+    { path: '/admin/devices', icon: 'fa-tablet-screen-button', label: 'Devices' },
+    { path: '/admin/groups', icon: 'fa-users-gear', label: 'Groups' },
+    { path: '/admin/users', icon: 'fa-users', label: 'Users' },
+    { path: '/admin/settings', icon: 'fa-gear', label: 'Settings' },
   ];
 
 
@@ -48,10 +49,9 @@ const Sidebar = ({ user }) => {
       end={link.path === '/admin'}
       className={({ isActive }) =>
         `nav-item group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden
-         text-[13px] font-medium mb-0.5 transition-all duration-200 ${
-          isActive
-            ? 'nav-item active text-lb-800 font-semibold'
-            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+         text-[13px] font-medium mb-0.5 transition-all duration-200 ${isActive
+          ? 'nav-item active text-lb-800 font-semibold'
+          : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
         }`
       }
     >
@@ -74,7 +74,7 @@ const Sidebar = ({ user }) => {
   );
 
   const initials = ((user?.name || user?.first_name || 'A')[0] || 'A').toUpperCase();
-  const fullName  = user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Administrator';
+  const fullName = user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Administrator';
   const roleLabel = user?.role === 'admin' || user?.role === 'superadmin' ? 'Fleet Manager' : 'Operator';
 
   return (
@@ -115,24 +115,23 @@ const Sidebar = ({ user }) => {
 
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 overflow-y-auto">
-        <div className="nav-section">Overview</div>
-        {userLinks.map(renderLink)}
+        {!isAdmin && <div className="nav-section">Overview</div>}
+        {!isAdmin && userLinks.map(renderLink)}
 
         {isAdmin && (
           <>
             <div className="nav-section" style={{ marginTop: '12px' }}>Administration</div>
             {adminLinks.slice(0, 5).map(renderLink)}
 
-            
+
             {/* Collapsible Audit Link */}
             <div>
               <button
                 onClick={() => setAuditOpen(!auditOpen)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
-                  location.pathname.startsWith('/admin/audit')
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${location.pathname.startsWith('/admin/audit')
                     ? 'text-lb-800 font-semibold'
                     : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
-                }`}
+                  }`}
               >
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
@@ -146,7 +145,7 @@ const Sidebar = ({ user }) => {
                 <span>Audit</span>
                 <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${auditOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {auditOpen && (
                 <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
                   {[
@@ -162,10 +161,9 @@ const Sidebar = ({ user }) => {
                       key={sub.path}
                       to={sub.path}
                       className={({ isActive }) =>
-                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                          isActive
-                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
-                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${isActive
+                          ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                          : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
                         }`
                       }
                     >
@@ -180,11 +178,10 @@ const Sidebar = ({ user }) => {
             <div>
               <button
                 onClick={() => setArchivedAuditOpen(!archivedAuditOpen)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
-                  location.pathname.startsWith('/admin/archived-audit')
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${location.pathname.startsWith('/admin/archived-audit')
                     ? 'text-lb-800 font-semibold'
                     : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
-                }`}
+                  }`}
               >
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
@@ -198,7 +195,7 @@ const Sidebar = ({ user }) => {
                 <span>Archived Audit</span>
                 <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${archivedAuditOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {archivedAuditOpen && (
                 <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
                   {[
@@ -214,10 +211,9 @@ const Sidebar = ({ user }) => {
                       key={sub.path}
                       to={sub.path}
                       className={({ isActive }) =>
-                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                          isActive
-                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
-                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${isActive
+                          ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                          : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
                         }`
                       }
                     >
@@ -233,26 +229,25 @@ const Sidebar = ({ user }) => {
             <div>
               <button
                 onClick={() => setVehiclesOpen(!vehiclesOpen)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
-                  location.pathname.startsWith('/admin/vehicles-') ||
-                  location.pathname.startsWith('/admin/view-vehicles') ||
-                  location.pathname.startsWith('/admin/vehicle-statuses') ||
-                  location.pathname.startsWith('/admin/view-tags')
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${location.pathname.startsWith('/admin/vehicles-') ||
+                    location.pathname.startsWith('/admin/view-vehicles') ||
+                    location.pathname.startsWith('/admin/vehicle-statuses') ||
+                    location.pathname.startsWith('/admin/view-tags')
                     ? 'text-lb-800 font-semibold'
                     : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
-                }`}
+                  }`}
               >
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
                   style={
                     location.pathname.startsWith('/admin/vehicles-') ||
-                    location.pathname.startsWith('/admin/view-vehicles') ||
-                    location.pathname.startsWith('/admin/vehicle-statuses') ||
-                    location.pathname.startsWith('/admin/view-tags')
+                      location.pathname.startsWith('/admin/view-vehicles') ||
+                      location.pathname.startsWith('/admin/vehicle-statuses') ||
+                      location.pathname.startsWith('/admin/view-tags')
                       ? {
-                          background: 'rgba(61,122,138,0.18)',
-                          boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
-                        }
+                        background: 'rgba(61,122,138,0.18)',
+                        boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                      }
                       : {}
                   }
                 >
@@ -261,7 +256,7 @@ const Sidebar = ({ user }) => {
                 <span>Vehicles</span>
                 <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${vehiclesOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {vehiclesOpen && (
                 <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
                   {[
@@ -289,10 +284,9 @@ const Sidebar = ({ user }) => {
                         key={sub.path}
                         to={sub.path}
                         className={({ isActive }) =>
-                          `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                            isActive
-                              ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
-                              : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                          `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
                           }`
                         }
                       >
