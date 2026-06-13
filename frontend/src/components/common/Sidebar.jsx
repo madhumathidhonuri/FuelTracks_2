@@ -16,17 +16,32 @@ const Sidebar = ({ user }) => {
     location.pathname.startsWith('/admin/view-tags')
   );
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [trackingOpen, setTrackingOpen] = useState(
+    location.pathname.startsWith('/track') || location.pathname.startsWith('/history')
+  );
+  const [reportsOpen, setReportsOpen] = useState(
+    location.pathname.startsWith('/reports')
+  );
+  const [analyticsOpen, setAnalyticsOpen] = useState(
+    location.pathname.startsWith('/analytics')
+  );
+  const [statisticsOpen, setStatisticsOpen] = useState(
+    location.pathname.startsWith('/statistics')
+  );
+  const [sensorsOpen, setSensorsOpen] = useState(
+    location.pathname.startsWith('/sensors')
+  );
+  const [protocolReportOpen, setProtocolReportOpen] = useState(
+    location.pathname.startsWith('/sensors/protocol-report')
+  );
+  const [performanceOpen, setPerformanceOpen] = useState(
+    location.pathname.startsWith('/performance')
+  );
 
 
 
   const userLinks = [
     { path: '/dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
-    { path: '/track', icon: 'fa-location-dot', label: 'Live Tracking' },
-    { path: '/history', icon: 'fa-clock-rotate-left', label: 'History' },
-    { path: '/reports', icon: 'fa-chart-line', label: 'Reports' },
-    { path: '/statistics', icon: 'fa-chart-bar', label: 'Statistics' },
-    { path: '/analytics', icon: 'fa-chart-pie', label: 'Analytics' },
-    { path: '/sensors', icon: 'fa-heart-pulse', label: 'Sensors' },
   ];
 
   const adminLinks = [
@@ -116,7 +131,349 @@ const Sidebar = ({ user }) => {
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 overflow-y-auto">
         {!isAdmin && <div className="nav-section">Overview</div>}
-        {!isAdmin && userLinks.map(renderLink)}
+        {!isAdmin && (
+          <>
+            {userLinks.slice(0, 1).map(renderLink)}
+            
+            {/* Collapsible Tracking Link */}
+            <div>
+              <button
+                onClick={() => setTrackingOpen(!trackingOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/track') || location.pathname.startsWith('/history')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={(location.pathname.startsWith('/track') || location.pathname.startsWith('/history')) ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-location-crosshairs" />
+                </div>
+                <span>Tracking</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${trackingOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {trackingOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/track', label: 'Single Track' },
+                    { path: '/track?mode=multi', label: 'Multi Track' },
+                    { path: '/history', label: 'History' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Reports Link */}
+            <div>
+              <button
+                onClick={() => setReportsOpen(!reportsOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/reports')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/reports') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-chart-line" />
+                </div>
+                <span>Reports</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${reportsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {reportsOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/reports/dashboard', label: 'Dashboard' },
+                    { path: '/reports/vehicles-consolidated', label: 'Vehicles Consolidated' },
+                    { path: '/reports/consolidated-site-location', label: 'Consolidated Site & Location' },
+                    { path: '/reports/consolidated-overspeed', label: 'Consolidated Overspeed' },
+                    { path: '/reports/consolidated-stoppage', label: 'Consolidated Stoppage' },
+                    { path: '/reports/consolidated-site-report', label: 'Consolidated Site Report' },
+                    { path: '/reports/tollgate-report', label: 'Tollgate Report' },
+                    { path: '/reports/non-moving-vehicles', label: 'Non Moving Vehicles' },
+                    { path: '/reports/travel-summary-report', label: 'Travel Summary Report' },
+                    { path: '/reports/consolidated-primary-engine', label: 'Consolidated Primary Engine' },
+                    { path: '/reports/site-stoppage-alert-report', label: 'Site Stoppage Alert Report' },
+                    { path: '/reports/consolidated-alarm-report', label: 'Consolidated Alarm Report' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Collapsible Statistics Link */}
+            <div>
+              <button
+                onClick={() => setStatisticsOpen(!statisticsOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/statistics')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/statistics') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-chart-bar" />
+                </div>
+                <span>Statistics</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${statisticsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {statisticsOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/statistics/vehiclewise-performance', label: 'Vehiclewise Performance' },
+                    { path: '/statistics/monthly-dist', label: 'Monthly Dist' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Analytics Link */}
+            <div>
+              <button
+                onClick={() => setAnalyticsOpen(!analyticsOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/analytics')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/analytics') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-chart-pie" />
+                </div>
+                <span>Analytics</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {analyticsOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/analytics/movement', label: 'Movement' },
+                    { path: '/analytics/overspeed', label: 'Overspeed' },
+                    { path: '/analytics/parked', label: 'Parked' },
+                    { path: '/analytics/idle', label: 'Idle' },
+                    { path: '/analytics/ignition', label: 'Ignition' },
+                    { path: '/analytics/site-trip', label: 'Site Trip' },
+                    { path: '/analytics/trip-summary', label: 'Trip Summary' },
+                    { path: '/analytics/alarm', label: 'Alarm' },
+                    { path: '/analytics/stoppage', label: 'Stoppage' },
+                    { path: '/analytics/no-data', label: 'No Data' },
+                    { path: '/analytics/route-deviation', label: 'Route Deviation' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Sensors Link */}
+            <div>
+              <button
+                onClick={() => setSensorsOpen(!sensorsOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/sensors')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/sensors') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-heart-pulse" />
+                </div>
+                <span>Sensors</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${sensorsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {sensorsOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/sensors/idle-wastage', label: 'Idle Wastage' },
+                    { path: '/sensors/engine-on', label: 'Engine On' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                  
+                  {/* Nested Collapsible Protocol Report */}
+                  <div>
+                    <button
+                      onClick={() => setProtocolReportOpen(!protocolReportOpen)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                        location.pathname.startsWith('/sensors/protocol-report')
+                          ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                          : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                      }`}
+                    >
+                      <span>Protocol Report</span>
+                      <i className={`fa-solid fa-chevron-down text-[9px] transition-transform duration-200 ${protocolReportOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {protocolReportOpen && (
+                      <div className="pl-3 mt-0.5 space-y-0.5 border-l border-[rgba(61,122,138,0.15)] ml-2">
+                        {[
+                          { path: '/sensors/protocol-report/device-data', label: 'Device Data' },
+                          { path: '/sensors/protocol-report/data-consumption', label: 'Data Consumption' },
+                        ].map((sub) => (
+                          <NavLink
+                            key={sub.label}
+                            to={sub.path}
+                            className={({ isActive }) =>
+                              `block px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                                isActive
+                                  ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                                  : 'text-lb-500 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                              }`
+                            }
+                          >
+                            {sub.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Performance Link */}
+            <div>
+              <button
+                onClick={() => setPerformanceOpen(!performanceOpen)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer relative overflow-hidden text-[13.5px] font-medium mb-0.5 transition-all duration-200 ${
+                  location.pathname.startsWith('/performance')
+                    ? 'text-lb-800 font-semibold'
+                    : 'text-lb-600 hover:bg-[rgba(61,122,138,0.09)] hover:text-lb-800'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[12px] transition-all duration-200"
+                  style={location.pathname.startsWith('/performance') ? {
+                    background: 'rgba(61,122,138,0.18)',
+                    boxShadow: '0 2px 8px rgba(15,60,80,0.12)',
+                  } : {}}
+                >
+                  <i className="fa-solid fa-chart-simple" />
+                </div>
+                <span>Performance</span>
+                <i className={`fa-solid fa-chevron-down ml-auto text-[10px] transition-transform duration-200 ${performanceOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {performanceOpen && (
+                <div className="pl-4 space-y-0.5 mt-0.5 border-l border-[rgba(61,122,138,0.15)] ml-[21px]">
+                  {[
+                    { path: '/performance/daily', label: 'Daily Performance' },
+                    { path: '/performance/monthly', label: 'Monthly Performance' },
+                  ].map((sub) => (
+                    <NavLink
+                      key={sub.label}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[rgba(61,122,138,0.12)] text-[#2a6070] font-semibold shadow-sm'
+                            : 'text-lb-600 hover:bg-[rgba(61,122,138,0.06)] hover:text-lb-800'
+                        }`
+                      }
+                    >
+                      {sub.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {isAdmin && (
           <>
